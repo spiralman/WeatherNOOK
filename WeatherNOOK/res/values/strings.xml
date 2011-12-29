@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, WeatherNOOKActivity!</string>
+    <string name="app_name">WeatherNOOK</string>
+    <string name="low">&quot;Low: %d \u00b0F&quot;</string>
+    <string name="high">&quot;High: %d \u00b0F&quot;</string>
+    <string name="dayFormat">%A</string>
+    <string name="morningPrecipFormat">Morning: %d%%</string>
+    <string name="eveningPrecipFormat">Evening: %d%%</string>
+    <string name="refresh">Refresh</string>
+    <string name="configure">Configure</string>
+    <string name="locationSearch">Find</string>
+    <string name="saveConfig">Save</string>
+    <string name="cancelConfig">Cancel</string>
+    <string name="locationFormat">Weather for %s</string>
+    <string name="currentTempFormat">%d \u00b0F</string>
+    <string name="windFormat">Wind: %1$d MPH %2$s</string>
+    <string name="humidityFormat">Humidity: %d%%</string>
+
+</resources>
