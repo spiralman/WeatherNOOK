@@ -1,0 +1,9 @@
+h1. WeatherNOOK
+
+WeatherNOOK is an Android weather app optimized for the Barnes & Noble NOOK Tablet. Weather 
+information is sourced from NOAA. METAR station XML feeds are used for the current observations,
+and the NDFD XML REST interface is used for forecast information.
+
+The icons are from the "OpenIcons":http://openiconlibrary.sourceforge.net/ project. Much of the
+initial NOAA REST interface is source from Jeffrey Sharkey's "Android Sky":http://code.google.com/p/android-sky/ 
+project.
