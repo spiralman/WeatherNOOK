@@ -32,7 +32,7 @@ class ForecastParserState extends StackXmlParserState {
 	}
 }
 
-class ForecastParserInitialState extends ForecastParserState {
+class ForecastParserInitialState extends ForecastParserState implements ValueReceiver {
 	public ForecastParserInitialState(ForecastParser parser) {
 		super(parser);
 	}
@@ -55,9 +55,15 @@ class ForecastParserInitialState extends ForecastParserState {
 			return new WeatherState(attributes.get("time-layout"), m_parser);
 		} else if( tagName.equals("hazards") ) {
 			return new HazardsState(attributes.get("time-layout"), m_parser);
+		} else if( tagName.equals("moreWeatherInformation") ) {
+			return new ValueTag(this);
 		} else {
 			return this;
 		}
+	}
+	
+	public void newValue(String value) {
+		m_parser.setUrl(value);
 	}
 }
 
@@ -321,6 +327,8 @@ public class ForecastParser {
 	
 	private Map<Date, Forecast> m_forecasts = new TreeMap<Date, Forecast>();
 	private Map<String, List<TimeRange> > m_timeLayouts = new HashMap<String, List<TimeRange> >();
+	
+	private String m_url = "http://www.weather.gov/";
 
 	void addTimeLayout(String key, List<TimeRange> ranges) {
 		m_timeLayouts.put(key, ranges);
@@ -344,6 +352,15 @@ public class ForecastParser {
 	
 	Date getStartTime( String layout, int index ) {
 		return m_timeLayouts.get(layout).get(index).start;
+	}
+	
+	void setUrl(String url) {
+		m_url = url;
+	}
+	
+	public String getUrl() {
+		// TODO: Find a better way to return the URL with the forecast list.
+		return m_url;
 	}
 	
 	public Collection<Forecast> getForecasts(double latitude, double longitude, int numDays) throws org.jsharkey.sky.webservice.Forecast.ParseException, IOException, XmlPullParserException, ParseException {

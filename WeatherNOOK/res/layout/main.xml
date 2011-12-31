@@ -66,6 +66,16 @@
             android:text="@string/humidityFormat"
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
+        <TextView
+            android:id="@+id/moreInformation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@id/currentCondition"
+            android:layout_alignParentBottom="false"
+            android:layout_alignRight="@+id/currentTemp"
+            android:text="@string/moreInfo"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
     </RelativeLayout>
 
     <ListView

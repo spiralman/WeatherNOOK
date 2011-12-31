@@ -22,7 +22,9 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.Html;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -70,6 +72,8 @@ public class WeatherNOOKActivity extends Activity {
 	private String m_windFormat = null;
 	private String m_humidityFormat = null;
 	
+	private String m_moreInfoText = null;
+	
 	private LocationRetrieval m_locationRetrieval = null;
 	
 	private Runnable m_onStationDBInitComplete = null;
@@ -90,6 +94,8 @@ public class WeatherNOOKActivity extends Activity {
         m_tempFormat = getString(R.string.currentTempFormat);
         m_windFormat = getString(R.string.windFormat);
         m_humidityFormat = getString(R.string.humidityFormat);
+        
+        m_moreInfoText = getString(R.string.moreInfo);
         
         setContentView(R.layout.main);
         
@@ -345,9 +351,11 @@ public class WeatherNOOKActivity extends Activity {
 		        TextView tempLabel = (TextView) findViewById(R.id.currentTemp);
 		        TextView windLabel = (TextView) findViewById(R.id.currentWind);
 		        TextView humidityLabel = (TextView) findViewById(R.id.currentHumidity);
+		        TextView moreInfoLabel = (TextView) findViewById(R.id.moreInformation);
 		        
 		        conditionImage.setImageResource(ForecastUtils.getIconForForecast(conditions.getConditions(), isDaytime));
 		        conditionLabel.setText(conditions.getConditions());
+		        moreInfoLabel.setText(Html.fromHtml(String.format("<a href=\"%1$s\">%2$s</a>", report.getUrl(), m_moreInfoText)));
 		        tempLabel.setText(String.format(m_tempFormat, Math.round(conditions.getTemperature())));
 		        windLabel.setText(String.format(m_windFormat, Math.round(conditions.getWindSpeed()), conditions.getWindDirAbbreviation()));
 		        
@@ -357,6 +365,8 @@ public class WeatherNOOKActivity extends Activity {
 		        } else {
 		        	humidityLabel.setVisibility(View.INVISIBLE);
 		        }
+		        
+		        moreInfoLabel.setMovementMethod(LinkMovementMethod.getInstance());
 		        
 		        View current = findViewById(R.id.currentConditionLayout);
 		        current.setVisibility(View.VISIBLE);

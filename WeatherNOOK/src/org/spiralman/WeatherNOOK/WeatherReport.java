@@ -3,12 +3,9 @@ package org.spiralman.WeatherNOOK;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Collection;
-import java.util.List;
 
 import org.jsharkey.sky.webservice.Forecast;
 import org.jsharkey.sky.webservice.Forecast.ParseException;
-import org.jsharkey.sky.webservice.ForecastSource;
-import org.jsharkey.sky.webservice.NoaaSource;
 import org.jsharkey.sky.webservice.WebserviceHelper;
 import org.spiralman.WeatherNOOK.Location.ForecastLocation;
 import org.spiralman.WeatherNOOK.XmlParser.StackXmlParser;
@@ -21,6 +18,8 @@ public class WeatherReport {
 	
 	private CurrentConditions m_currentConditions;
 	
+	private String m_url;
+	
 	public static WeatherReport getWeather(ForecastLocation location) throws ParseException, IOException, XmlPullParserException, java.text.ParseException {
 		ForecastParser forecastParser = new ForecastParser();
 		StackXmlParser conditionParser = new StackXmlParser();
@@ -28,6 +27,7 @@ public class WeatherReport {
 		WeatherReport report = new WeatherReport();
 		
 		report.m_forecast = forecastParser.getForecasts(location.getLatitude(), location.getLongitude(), 5);
+		report.m_url = forecastParser.getUrl();
 		report.m_currentConditions = new CurrentConditions();
 		
 		Log.d("ConditionParser", "Conditions from: " + location.getObservationStation().getUrl());
@@ -52,5 +52,13 @@ public class WeatherReport {
 
 	public void setCurrentConditions(CurrentConditions currentConditions) {
 		m_currentConditions = currentConditions;
+	}
+
+	public String getUrl() {
+		return m_url;
+	}
+
+	public void setUrl(String url) {
+		m_url = url;
 	}
 }
