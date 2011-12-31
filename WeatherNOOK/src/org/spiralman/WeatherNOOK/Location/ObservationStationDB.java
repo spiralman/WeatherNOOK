@@ -3,6 +3,8 @@ package org.spiralman.WeatherNOOK.Location;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.text.ParseException;
+import java.util.Map;
 
 import org.spiralman.WeatherNOOK.XmlParser.StackXmlParser;
 import org.spiralman.WeatherNOOK.XmlParser.StackXmlParserState;
@@ -35,7 +37,7 @@ class InitialState extends StationParserState {
 	}
 
 	@Override
-	public StackXmlParserState startNewTag(String tagName) {
+	public StackXmlParserState startNewTag(String tagName, Map<String,String> attributes) {
 		if( tagName.equals("station") ) {
 			return new StationTag(m_db);
 		} else {
@@ -54,7 +56,7 @@ class StationTag extends StationParserState {
 	}
 
 	@Override
-	public StackXmlParserState startNewTag(String tagName) {
+	public StackXmlParserState startNewTag(String tagName, Map<String,String> attributes) {
 		if( tagName.equals("station_id") ) {
 			return new IdTag(m_station,m_db);
 		} else if( tagName.equals("station_name") ) {
@@ -227,7 +229,7 @@ public class ObservationStationDB extends SQLiteOpenHelper {
 		return  m_isInitialized;
 	}
 	
-	public void importStations(Reader stationXML) throws IOException, XmlPullParserException {
+	public void importStations(Reader stationXML) throws IOException, XmlPullParserException, ParseException {
 		Log.d("ObservationStationDB", "Importing Stations");
 		StackXmlParser parser = new StackXmlParser();
 			

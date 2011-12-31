@@ -28,7 +28,7 @@ public class Forecast {
     private int morningPrecip = Integer.MIN_VALUE;
     private int eveningPrecip = Integer.MIN_VALUE;
     
-    private String conditions;
+    private String conditions = "Unknown";
     private String url;
     
     /**

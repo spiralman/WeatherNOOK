@@ -2,6 +2,8 @@ package org.spiralman.WeatherNOOK.XmlParser;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.text.ParseException;
+import java.util.HashMap;
 import java.util.Stack;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -13,7 +15,7 @@ public class StackXmlParser {
 	
 	private XmlPullParserFactory m_xmlFactory = null;
 	
-	public void parseXml(Reader xml, StackXmlParserState baseState) throws IOException, XmlPullParserException {
+	public void parseXml(Reader xml, StackXmlParserState baseState) throws IOException, XmlPullParserException, ParseException {
 		if( m_xmlFactory == null ) {
 			m_xmlFactory = XmlPullParserFactory.newInstance();
 		}
@@ -31,7 +33,11 @@ public class StackXmlParser {
 			
 			switch(xmlEvent) {
 			case XmlPullParser.START_TAG:
-				states.push(current.startNewTag(parser.getName()));
+				HashMap<String,String> attributes = new HashMap<String,String>();
+				for( int i = 0; i < parser.getAttributeCount(); ++i ) {
+					attributes.put(parser.getAttributeName(i), parser.getAttributeValue(i));
+				}
+				states.push(current.startNewTag(parser.getName(), attributes));
 				break;
 			case XmlPullParser.END_TAG:
 				states.pop();
