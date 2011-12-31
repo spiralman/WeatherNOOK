@@ -151,7 +151,7 @@ public class NoaaSource implements ForecastSource {
         // Sort by time, but always bump alerts to top
         Collections.sort(flat, new Comparator<Forecast>() {
             public int compare(Forecast left, Forecast right) {
-                if (left.alert) {
+                if (left.hasAlert()) {
                     return -1;
                 } else {
                     return (int)(left.getValidStart() - right.getValidStart());
@@ -219,7 +219,7 @@ public class NoaaSource implements ForecastSource {
 
                     } else if (TAG_HAZARD.equals(thisTag)) {
                         Forecast forecast = getForecast(forecasts, thisLayout, ++index);
-                        forecast.alert = true;
+                        forecast.setAlert(true);
                         forecast.setConditions(xpp.getAttributeValue(null, ATTR_PHENOMENA) + " "
                                 + xpp.getAttributeValue(null, ATTR_SIGNIFICANCE));
                     }

@@ -20,7 +20,7 @@ package org.jsharkey.sky.webservice;
  * Data for a specific forecast at a point in time.
  */
 public class Forecast {
-    boolean alert = false;
+    private boolean alert = false;
     private long validStart = Long.MIN_VALUE;
     private int tempHigh = Integer.MIN_VALUE;
     private int tempLow = Integer.MIN_VALUE;
@@ -101,6 +101,14 @@ public class Forecast {
 
 	public void setUrl(String url) {
 		this.url = url;
+	}
+
+	public boolean hasAlert() {
+		return alert;
+	}
+
+	public void setAlert(boolean alert) {
+		this.alert = alert;
 	}
 
 }

@@ -51,6 +51,10 @@ class ForecastParserInitialState extends ForecastParserState {
 			}
 		} else if( tagName.equals("probability-of-precipitation") ) {
 			return new ProbabilityOfPrecipitation(attributes.get("time-layout"), m_parser);
+		} else if( tagName.equals("weather") ) {
+			return new WeatherState(attributes.get("time-layout"), m_parser);
+		} else if( tagName.equals("hazards") ) {
+			return new HazardsState(attributes.get("time-layout"), m_parser);
 		} else {
 			return this;
 		}
@@ -145,7 +149,7 @@ class EndTimeTag extends ForecastParserState {
 	}
 }
 
-abstract class TimeSeriesState extends ForecastParserState {
+class TimeSeriesState extends ForecastParserState {
 	protected String m_layoutKey = null;
 	
 	protected int m_currentIndex = 0;
@@ -162,14 +166,16 @@ abstract class TimeSeriesState extends ForecastParserState {
 	public Forecast currentForecast() {
 		return m_parser.getForecast(m_layoutKey, m_currentIndex);
 	}
-	
-	abstract public void newValue(String value);
+}
+
+interface ValueReceiver {
+	public void newValue(String value);
 }
 
 class ValueTag extends StackXmlParserState {
-	private TimeSeriesState m_parent;
+	private ValueReceiver m_parent;
 	
-	public ValueTag(TimeSeriesState parent) {
+	public ValueTag(ValueReceiver parent) {
 		m_parent = parent;
 	}
 	
@@ -178,7 +184,7 @@ class ValueTag extends StackXmlParserState {
 	}
 }
 
-class MaxTempState extends TimeSeriesState {
+class MaxTempState extends TimeSeriesState implements ValueReceiver {
 	public MaxTempState(String layoutKey, ForecastParser parser) {
 		super(layoutKey, parser);
 	}
@@ -192,14 +198,13 @@ class MaxTempState extends TimeSeriesState {
 		}
 	}
 	
-	@Override
 	public void newValue(String value) {
 		currentForecast().setTempHigh(Integer.parseInt(value));
 		m_currentIndex++;
 	}
 }
 
-class MinTempState extends TimeSeriesState {
+class MinTempState extends TimeSeriesState implements ValueReceiver {
 	public MinTempState(String layoutKey, ForecastParser parser) {
 		super(layoutKey, parser);
 	}
@@ -213,14 +218,13 @@ class MinTempState extends TimeSeriesState {
 		}
 	}
 	
-	@Override
 	public void newValue(String value) {
 		currentForecast().setTempLow(Integer.parseInt(value));
 		m_currentIndex++;
 	}
 }
 
-class ProbabilityOfPrecipitation extends TimeSeriesState {
+class ProbabilityOfPrecipitation extends TimeSeriesState implements ValueReceiver {
 	public ProbabilityOfPrecipitation(String layoutKey, ForecastParser parser) {
 		super(layoutKey, parser);
 	}
@@ -234,7 +238,6 @@ class ProbabilityOfPrecipitation extends TimeSeriesState {
 		}
 	}
 	
-	@Override
 	public void newValue(String value) {
 		if( currentStartTime().getHours() < 12 ) {
 			currentForecast().setMorningPrecip(Integer.parseInt(value));
@@ -243,6 +246,73 @@ class ProbabilityOfPrecipitation extends TimeSeriesState {
 		}
 		
 		m_currentIndex++;
+	}
+}
+
+class WeatherState extends TimeSeriesState{
+	public WeatherState(String layoutKey, ForecastParser parser) {
+		super(layoutKey, parser);
+	}
+	
+	@Override
+	public StackXmlParserState startNewTag(String tagName, Map<String,String> attributes) {
+		if( tagName.equals("weather-conditions") ) {
+			Forecast current = currentForecast();
+			// TODO: Better would be to store alert objects with a forecast. Especially since there can,
+			// technically, be multiple alerts per day. However, this is how jsharkey's code stores it, 
+			// and we don't really have a way to display multiple alerts yet, anyway.
+			if( !current.hasAlert() ) {
+				currentForecast().setConditions(attributes.get("weather-summary"));
+			}
+			m_currentIndex++;
+		}
+		
+		return this;
+	}
+}
+
+class HazardsState extends TimeSeriesState {
+	public HazardsState(String layoutKey, ForecastParser parser) {
+		super(layoutKey, parser);
+	}
+	
+	@Override
+	public StackXmlParserState startNewTag(String tagName, Map<String,String> attributes) {
+		if( tagName.equals("hazard-conditions") ) {
+			return new HazardConditionsState(this);
+		}
+		
+		return this;
+	}
+}
+
+class HazardConditionsState extends StackXmlParserState implements ValueReceiver {
+	private HazardsState m_parent;
+	
+	public HazardConditionsState( HazardsState parent ) {
+		m_parent = parent;
+	}
+	
+	@Override
+	public StackXmlParserState startNewTag(String tagName, Map<String,String> attributes) {
+		if( tagName.equals("hazard") ) {
+			Forecast current = m_parent.currentForecast();
+			current.setAlert(true);
+			current.setConditions(attributes.get("phenomena") + " " + attributes.get("significance"));
+		} else if( tagName.equals("hazardTextURL") ) {
+			return new ValueTag(this);
+		}
+		
+		return this;
+	}
+	
+	public void endThisTag() {
+		m_parent.m_currentIndex++;
+	}
+	
+	public void newValue(String value) {
+		// Only the hazard URL is encoded as a text value.
+		m_parent.currentForecast().setUrl(value.trim());
 	}
 }
 

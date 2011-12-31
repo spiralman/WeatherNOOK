@@ -389,7 +389,10 @@ public class WeatherNOOKActivity extends Activity {
             }
             catch(Exception e)
             {
-            	Log.d("WeatherNOOK", e.getMessage());
+            	Log.d("WeatherNOOK", e.getClass().toString());
+            	for( StackTraceElement element : e.getStackTrace()) {
+            		Log.d("WeatherNOOK", element.toString());
+            	}
             	done.what = FETCH_ERROR;
             	done.obj = e.getMessage();
             }
