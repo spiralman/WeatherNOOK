@@ -33,7 +33,6 @@ public class ForecastBinder implements ViewBinder {
 		
 		Time time = new Time();
     	time.set(forecast.getValidStart());
-    	boolean isDaytime = ForecastUtils.isDaytime(time);
     	
     	RelativeLayout layout = (RelativeLayout) view.findViewById(R.id.forecastLayout);
 		
@@ -46,7 +45,7 @@ public class ForecastBinder implements ViewBinder {
 		TextView evening = (TextView) view.findViewById(R.id.eveningPrecip);
 		
 		day.setText(time.format(dayFormat));
-		forecastImage.setImageResource(ForecastUtils.getIconForForecast(forecast.getConditions(), isDaytime));
+		forecastImage.setImageResource(ForecastUtils.getIconForForecast(forecast.getConditions(), true));
 		condition.setText(forecast.getConditions());
 		high.setText(String.format(tempHighFormat, forecast.getTempHigh()));
 		low.setText(String.format(tempLowFormat, forecast.getTempLow()));
