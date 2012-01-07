@@ -37,7 +37,7 @@ public class ForecastUtils {
      * Time when we consider daytime to end. We keep this early to make sure
      * that our 6PM widget update will change icons correctly.
      */
-    private static final int DAYTIME_END_HOUR = 16;
+    private static final int DAYTIME_END_HOUR = 18;
     
     private static final String[] sIconAlert = new String[] { "alert", "advisory", "warning", "watch" };
     private static final String[] sIconStorm = new String[] { "thunder", "tstms" };
