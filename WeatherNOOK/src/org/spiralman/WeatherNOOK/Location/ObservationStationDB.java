@@ -33,7 +33,6 @@ class InitialState extends StationParserState {
 
 	public InitialState(ObservationStationDB db) {
 		super(db);
-		// TODO Auto-generated constructor stub
 	}
 
 	@Override
@@ -188,8 +187,8 @@ public class ObservationStationDB extends SQLiteOpenHelper {
 			m_db = getWritableDatabase();
 			
 			if( m_newDB ) {
-				InitializeThread init = new InitializeThread();
-				init.execute(initializeHandler);
+				InitializeThread init = new InitializeThread(initializeHandler);
+				init.execute();
 			} else {
 				m_isInitialized = true;
 			}
@@ -267,45 +266,56 @@ public class ObservationStationDB extends SQLiteOpenHelper {
 		return closest;
 	}
 	
-	private class InitializeThread extends AsyncTask<Handler, Void, Void> {
-    	public Void doInBackground(Handler... handlers) {
-    		Handler handler = handlers[0];
+	private class InitializeThread extends AsyncTask<Void, Void, Void> {
+		Handler m_handler = null;
+		Exception m_exception = null;
+		
+		public InitializeThread(Handler handler) {
+			m_handler = handler;
+		}
+		
+    	public Void doInBackground(Void... handlers) {
     		try
             {
-    			if( handler != null ) {
-	    			Message starting = handler.obtainMessage();
-	    			starting.what = INITIALIZE_STARTING;
-	    			handler.sendMessage(starting);
-    			}
-    			
     			AssetManager assets = m_context.getAssets();
             	
             	importStations(new InputStreamReader(assets.open("noaa_weather_station_index.xml")));
-            	
-            	if( handler != null ) {
-	            	Message done = handler.obtainMessage();
-	            	done.what = INITIALIZE_SUCCESS;
-	            	handler.sendMessage(done);
-            	}
             }
             catch(Exception e)
             {
             	Log.d("WeatherNOOK", e.getMessage());
             	
-            	if( handler != null ) {
-	            	Message error = handler.obtainMessage();
-	            	error.what = INITIALIZE_ERROR;
-	            	error.obj = e.getMessage();
-	            	handler.sendMessage(error);
-            	}
+            	m_exception = e;
             }
     		
     		return (Void)null;
     	}
     	
     	@Override
+    	protected void onPreExecute() {
+    		if( m_handler != null ) {
+    			Message starting = m_handler.obtainMessage();
+    			starting.what = INITIALIZE_STARTING;
+    			m_handler.sendMessage(starting);
+			}
+    	}
+    	
+    	@Override
     	protected void onPostExecute(Void v) {
     		m_isInitialized = true;
+    		
+    		if( m_handler != null ) {
+    			if( m_exception == null ) {
+    				Message done = m_handler.obtainMessage();
+	            	done.what = INITIALIZE_SUCCESS;
+	            	m_handler.sendMessage(done);
+    			} else {
+    				Message error = m_handler.obtainMessage();
+	            	error.what = INITIALIZE_ERROR;
+	            	error.obj = m_exception.getMessage();
+	            	m_handler.sendMessage(error);
+    			}
+    		}
     	}
     }
 }
