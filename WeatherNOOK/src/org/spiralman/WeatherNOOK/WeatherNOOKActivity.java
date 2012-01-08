@@ -95,6 +95,10 @@ public class WeatherNOOKActivity extends Activity {
         
         View current = findViewById(R.id.currentConditionLayout);
         current.setVisibility(View.INVISIBLE);
+        
+        if( m_location != null ) {
+        	m_report = (WeatherReport) getLastNonConfigurationInstance();
+        }
     }
     
     @Override
@@ -102,8 +106,6 @@ public class WeatherNOOKActivity extends Activity {
     	super.onStart();
     	
     	if( m_location != null ) {
-        	m_report = (WeatherReport) getLastNonConfigurationInstance();
-        	
         	if( m_report != null ) {
         		Date now = new Date();
         		Date refreshAfter = m_report.getCurrentConditions().getRefreshAfter();
