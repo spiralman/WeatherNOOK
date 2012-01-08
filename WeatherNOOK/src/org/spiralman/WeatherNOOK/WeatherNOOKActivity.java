@@ -293,7 +293,7 @@ public class WeatherNOOKActivity extends Activity {
     
     private void promptException(String message, Exception e) {
     	logException(e);
-    	m_lastError = message + " " + e.getLocalizedMessage();
+    	m_lastError = message + " " + e.toString();
 		showDialog(ERROR_DIALOG);
     }
     
@@ -301,7 +301,7 @@ public class WeatherNOOKActivity extends Activity {
     	Log.d("WetherNOOK", "Exception: " + e.getMessage());
     	Log.d("WeatherNOOK", e.getClass().toString());
     	for( StackTraceElement element : e.getStackTrace()) {
-    		Log.d("WeatherNOOK", "\tat" + element.toString());
+    		Log.d("WeatherNOOK", "\tat " + element.toString());
     	}
     }
     
