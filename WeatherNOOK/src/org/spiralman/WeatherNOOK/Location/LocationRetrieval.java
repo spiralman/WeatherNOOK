@@ -11,15 +11,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
-import android.os.Handler;
-
 public class LocationRetrieval {
 	private ObservationStationDB m_stationDB = null;
 	
-	public LocationRetrieval(Context context, Handler initializeHandler) {
-		m_stationDB = new ObservationStationDB(context);
-		m_stationDB.open(initializeHandler);
+	public LocationRetrieval(ObservationStationDB stationDB) {
+		m_stationDB = stationDB;
 	}
 	
 	public ObservationStationDB getObservationStationDB() {

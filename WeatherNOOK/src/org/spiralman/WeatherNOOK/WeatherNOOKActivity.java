@@ -1,5 +1,6 @@
 package org.spiralman.WeatherNOOK;
 
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +20,8 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -86,9 +89,10 @@ public class WeatherNOOKActivity extends Activity {
         ForecastBinder.prepareFormatStrings(this);
         WebserviceHelper.prepareUserAgent(this);
         
-        loadLocation();
+        LocationInitializeThread locationInit = new LocationInitializeThread();
+        locationInit.execute((Void)null);
         
-        m_locationRetrieval = new LocationRetrieval(this, dbInitializeHandler);
+        loadLocation();
         
         m_locationFormat = getString(R.string.locationFormat);
         m_tempFormat = getString(R.string.currentTempFormat);
@@ -232,7 +236,7 @@ public class WeatherNOOKActivity extends Activity {
     }
     
     private void showConfigDialog() {
-    	if( m_locationRetrieval.getObservationStationDB().isInitialized() ) {
+    	if( m_locationRetrieval != null ) {
 			showDialog(CONFIGURE_DIALOG);
 		} else {
 			m_onStationDBInitComplete = new Runnable() {
@@ -301,27 +305,6 @@ public class WeatherNOOKActivity extends Activity {
     	}
     }
     
-    final Handler dbInitializeHandler = new Handler() {
-    	public void handleMessage(Message m) {
-    		switch(m.what) {
-    		case ObservationStationDB.INITIALIZE_STARTING:
-		        break;
-    		case ObservationStationDB.INITIALIZE_SUCCESS:
-    			dismissDialog(REFRESH_DIALOG);
-    			if( m_onStationDBInitComplete != null ) {
-    				m_onStationDBInitComplete.run();
-    				m_onStationDBInitComplete = null;
-    			}
-    			break;
-    		case ObservationStationDB.INITIALIZE_ERROR:
-    			dismissDialog(REFRESH_DIALOG);
-    			m_lastError = (String)m.obj;
-    			showDialog(ERROR_DIALOG);
-    			break;
-    		}
-    	}
-    };
-    
     final Handler refreshHandler = new Handler() {
     	public void handleMessage(Message m) {
     		dismissDialog(REFRESH_DIALOG);
@@ -379,6 +362,54 @@ public class WeatherNOOKActivity extends Activity {
     		}
     	}
     };
+    
+	private class LocationInitializeThread extends AsyncTask<Void, Void, LocationRetrieval> {
+		Exception m_exception = null;
+		
+		public LocationRetrieval doInBackground(Void... handlers) {
+    		LocationRetrieval locationRetrieval = null;
+    		
+    		try
+            {
+    			ObservationStationDB stationDB = new ObservationStationDB(WeatherNOOKActivity.this);
+    			stationDB.open();
+    			
+    			if( !stationDB.isInitialized() ) {
+    				AssetManager assets = getAssets();
+            	
+    				stationDB.importStations(new InputStreamReader(assets.open("noaa_weather_station_index.xml")));
+    			}
+    			
+    			locationRetrieval = new LocationRetrieval(stationDB);
+            }
+            catch(Exception e)
+            {
+            	Log.d("WeatherNOOK", e.getMessage());
+            	
+            	m_exception = e;
+            }
+    		
+    		return locationRetrieval;
+    	}
+    	
+    	@Override
+    	protected void onPostExecute(LocationRetrieval retrieval) {
+    		m_locationRetrieval = retrieval;
+    		
+    		if( m_exception == null ) {
+    			dismissDialog(REFRESH_DIALOG);
+    			
+    			if( m_onStationDBInitComplete != null ) {
+    				m_onStationDBInitComplete.run();
+    				m_onStationDBInitComplete = null;
+    			}
+			} else {
+				dismissDialog(REFRESH_DIALOG);
+    			m_lastError = m_exception.getLocalizedMessage();
+    			showDialog(ERROR_DIALOG);
+			}
+    	}
+    }
     
     private class RefreshThread extends Thread {
     	Handler m_handler = null;

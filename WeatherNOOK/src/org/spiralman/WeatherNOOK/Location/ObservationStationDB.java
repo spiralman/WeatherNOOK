@@ -12,13 +12,9 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 
 class StationParserState extends StackXmlParserState {
@@ -175,21 +171,17 @@ public class ObservationStationDB extends SQLiteOpenHelper {
 	private boolean m_isInitialized = false;
 	
 	private SQLiteDatabase m_db = null;
-	private Context m_context = null;
 
 	public ObservationStationDB(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
-		m_context  = context;
 	}
 	
-	public void open(Handler initializeHandler) {
+	public void open() {
 		if( m_db == null ) {
 			m_db = getWritableDatabase();
 			
-			if( m_newDB ) {
-				InitializeThread init = new InitializeThread(initializeHandler);
-				init.execute();
-			} else {
+			// Will be set to true if onCreate got called (indicating that the DB is empty)
+			if( !m_newDB ) {
 				m_isInitialized = true;
 			}
 		}
@@ -233,6 +225,8 @@ public class ObservationStationDB extends SQLiteOpenHelper {
 		StackXmlParser parser = new StackXmlParser();
 			
 		parser.parseXml(stationXML, new InitialState(this));
+		
+		m_isInitialized = true;
 	
 		Log.d("ObservationStationDB", "Done importing stations");
 	}
@@ -265,57 +259,4 @@ public class ObservationStationDB extends SQLiteOpenHelper {
 		
 		return closest;
 	}
-	
-	private class InitializeThread extends AsyncTask<Void, Void, Void> {
-		Handler m_handler = null;
-		Exception m_exception = null;
-		
-		public InitializeThread(Handler handler) {
-			m_handler = handler;
-		}
-		
-    	public Void doInBackground(Void... handlers) {
-    		try
-            {
-    			AssetManager assets = m_context.getAssets();
-            	
-            	importStations(new InputStreamReader(assets.open("noaa_weather_station_index.xml")));
-            }
-            catch(Exception e)
-            {
-            	Log.d("WeatherNOOK", e.getMessage());
-            	
-            	m_exception = e;
-            }
-    		
-    		return (Void)null;
-    	}
-    	
-    	@Override
-    	protected void onPreExecute() {
-    		if( m_handler != null ) {
-    			Message starting = m_handler.obtainMessage();
-    			starting.what = INITIALIZE_STARTING;
-    			m_handler.sendMessage(starting);
-			}
-    	}
-    	
-    	@Override
-    	protected void onPostExecute(Void v) {
-    		m_isInitialized = true;
-    		
-    		if( m_handler != null ) {
-    			if( m_exception == null ) {
-    				Message done = m_handler.obtainMessage();
-	            	done.what = INITIALIZE_SUCCESS;
-	            	m_handler.sendMessage(done);
-    			} else {
-    				Message error = m_handler.obtainMessage();
-	            	error.what = INITIALIZE_ERROR;
-	            	error.obj = m_exception.getMessage();
-	            	m_handler.sendMessage(error);
-    			}
-    		}
-    	}
-    }
 }
