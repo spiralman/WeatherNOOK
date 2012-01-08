@@ -1,6 +1,7 @@
 package org.spiralman.WeatherNOOK;
 
 import java.io.InputStreamReader;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -94,11 +95,24 @@ public class WeatherNOOKActivity extends Activity {
         
         View current = findViewById(R.id.currentConditionLayout);
         current.setVisibility(View.INVISIBLE);
-        
-        if( m_location != null ) {
+    }
+    
+    @Override
+    public void onStart() {
+    	super.onStart();
+    	
+    	if( m_location != null ) {
         	m_report = (WeatherReport) getLastNonConfigurationInstance();
+        	
         	if( m_report != null ) {
-        		displayReport();
+        		Date now = new Date();
+        		Date refreshAfter = m_report.getCurrentConditions().getRefreshAfter();
+        		
+        		if( refreshAfter != null && now.after(refreshAfter) ) {
+        			refresh();
+        		} else {
+        			displayReport();
+        		}
         	} else {
         		refresh();
         	}

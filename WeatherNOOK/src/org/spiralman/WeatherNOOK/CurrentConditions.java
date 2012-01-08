@@ -1,5 +1,6 @@
 package org.spiralman.WeatherNOOK;
 
+import java.util.Calendar;
 import java.util.Date;
 
 public class CurrentConditions {
@@ -8,8 +9,10 @@ public class CurrentConditions {
 	private double m_windSpeed = 0.0;
 	private String m_windDir = "";
 	private int m_humidity = -1;
+	private int m_pickupPeriod = 0;
 	
 	private Date m_observationTime = null;
+	private Date m_refreshAfter = null;
 	
 	public String getConditions() {
 		return m_conditions;
@@ -76,5 +79,30 @@ public class CurrentConditions {
 
 	public void setObservationTime(Date observationTime) {
 		m_observationTime = observationTime;
+		if( m_pickupPeriod != 0 ) {
+			updateRefreshAfter();
+		}
+	}
+	
+	public int getPickupPeriod() {
+		return m_pickupPeriod;
+	}
+
+	public void setPickupPeriod(int pickupPeriod) {
+		m_pickupPeriod = pickupPeriod;
+		if( m_observationTime != null ) {
+			updateRefreshAfter();
+		}
+	}
+	
+	private void updateRefreshAfter() {
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(m_observationTime);
+		calendar.add(Calendar.HOUR_OF_DAY, m_pickupPeriod);
+		m_refreshAfter = calendar.getTime();
+	}
+
+	public Date getRefreshAfter() {
+		return m_refreshAfter;
 	}
 }

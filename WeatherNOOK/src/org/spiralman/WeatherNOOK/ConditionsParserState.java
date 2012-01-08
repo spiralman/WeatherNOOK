@@ -34,7 +34,9 @@ class ConditionsInitialState extends ConditionsParserState {
 			return new WindSpeedTagState(m_conditions);
 		} else if( tagName.equals("observation_time_rfc822")) {
 			return new ObservationTimeTagState(m_conditions);
-		}else {
+		} else if( tagName.equals("suggested_pickup_period")) {
+			return new SugestedPickupPeriodTagState(m_conditions);
+		} else {
 			return this;
 		}
 	}
@@ -111,6 +113,18 @@ class ObservationTimeTagState extends ConditionsParserState {
 	public void text(String text) throws ParseException {
 		Log.d("ConditionParser", "observation time: " + text);
 		m_conditions.setObservationTime(m_dateParser.parse(text));
+	}
+}
+
+class SugestedPickupPeriodTagState extends ConditionsParserState {
+	SugestedPickupPeriodTagState(CurrentConditions conditions) {
+		super(conditions);
+	}
+	
+	@Override
+	public void text(String text) {
+		Log.d("ConditionParser", "suggested pickup period: " + text);
+		m_conditions.setPickupPeriod(Integer.parseInt(text));
 	}
 }
 
