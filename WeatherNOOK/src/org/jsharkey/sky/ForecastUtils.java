@@ -20,7 +20,6 @@ import java.util.regex.Pattern;
 
 import org.spiralman.WeatherNOOK.R;
 
-import android.content.res.Resources;
 import android.text.format.Time;
 
 /**
