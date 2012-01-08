@@ -35,13 +35,37 @@ public class LocationRetrieval {
 			{
 				JSONObject address = results.getJSONObject(i);
 				
-				String name = address.getString("formatted_address");
+				String fullName = address.getString("formatted_address");
+				String city = null;
+				String state = null;
+				
+				JSONArray addressComponents = address.getJSONArray("address_components");
+				for( int ac = 0; i < addressComponents.length(); ++ac ) {
+					JSONObject component = addressComponents.getJSONObject(ac);
+					
+					JSONArray types = component.getJSONArray("types");
+					
+					for( int t = 0; t < types.length(); ++t ) {
+						if( types.getString(t).equals("administrative_area_level_1") ) {
+							state = component.getString("short_name");
+							break;
+						} else if( types.getString(t).equals("locality") ) {
+							city = component.getString("long_name");
+							break;
+						}
+					}
+					
+					if( city != null && state != null ) {
+						break;
+					}
+				}
+				
 				double latitude = address.getJSONObject("geometry").getJSONObject("location").getDouble("lat");
 				double longitude = address.getJSONObject("geometry").getJSONObject("location").getDouble("lng");
 				
 				ObservationStation closestStation = m_stationDB.getClosestStation(latitude, longitude);
 				
-				locations.add(new ForecastLocation(name, latitude, longitude, closestStation));
+				locations.add(new ForecastLocation(city, state, fullName, latitude, longitude, closestStation));
 			}
 		} catch(JSONException e) {
 			throw new ParseException("Error parsing Location results: " + e.getMessage() );

@@ -9,9 +9,9 @@ import java.util.Map;
 import org.jsharkey.sky.ForecastUtils;
 import org.jsharkey.sky.webservice.Forecast;
 import org.jsharkey.sky.webservice.WebserviceHelper;
+import org.json.JSONException;
 import org.spiralman.WeatherNOOK.Location.LocationRetrieval;
 import org.spiralman.WeatherNOOK.Location.ForecastLocation;
-import org.spiralman.WeatherNOOK.Location.ObservationStation;
 import org.spiralman.WeatherNOOK.Location.ObservationStationDB;
 
 import android.app.Activity;
@@ -45,15 +45,7 @@ public class WeatherNOOKActivity extends Activity {
 	private final int CONFIGURE_DIALOG = 1;
 	private final int ERROR_DIALOG = 2;
 	
-	private final String LATITUDE_KEY = "ForecastLatitude";
-	private final String LONGITUDE_KEY = "ForecastLongitude";
-	private final String LOCATION_KEY = "ForecastLocation";
-	
-	private static final String STATION_ID_KEY = "StationID";
-	private static final String STATION_NAME_KEY = "StationName";
-	private static final String STATION_URL_KEY = "StationURL";
-	private static final String STATION_LATITUDE_KEY = "StationLatitude";
-	private static final String STATION_LONGITUDE_KEY = "StationLongitude";
+	private final String LOCATION_JSON_KEY = "ForecastLocationJSON";
 	
 	private ProgressDialog m_progressDialog = null;
 	private AlertDialog m_configDialog = null;
@@ -132,20 +124,11 @@ public class WeatherNOOKActivity extends Activity {
 		}
     }
     
-    private void saveLocation() {
+    private void saveLocation() throws JSONException {
     	SharedPreferences settings = getPreferences(MODE_PRIVATE);
 		SharedPreferences.Editor editor = settings.edit();
 		
-		editor.putString(LOCATION_KEY, m_location.toString());
-		editor.putFloat(LATITUDE_KEY, (float)m_location.getLatitude());
-        editor.putFloat(LONGITUDE_KEY, (float)m_location.getLongitude());
-        
-        editor.putString(STATION_ID_KEY, m_location.getObservationStation().getId());
-        editor.putString(STATION_NAME_KEY, m_location.getObservationStation().getName());
-        editor.putString(STATION_URL_KEY, m_location.getObservationStation().getUrl());
-        
-        editor.putFloat(STATION_LATITUDE_KEY, (float)m_location.getObservationStation().getLatitude());
-        editor.putFloat(STATION_LONGITUDE_KEY, (float)m_location.getObservationStation().getLongitude());
+		editor.putString(LOCATION_JSON_KEY, m_location.toJSON());
         
         editor.commit();
     }
@@ -153,21 +136,16 @@ public class WeatherNOOKActivity extends Activity {
     private void loadLocation() {
     	SharedPreferences settings = getPreferences(MODE_PRIVATE);
     	
-    	if( settings.contains(LOCATION_KEY) ) {
+    	if( settings.contains(LOCATION_JSON_KEY) ) {
+    		
+    		try {
 	    	
-	        String locationName = settings.getString(LOCATION_KEY, "Unknown Location");
-	        double latitude = settings.getFloat(LATITUDE_KEY, 0.0F);
-	        double longitude = settings.getFloat(LONGITUDE_KEY, 0.0F);
+    			String locationJSON = settings.getString(LOCATION_JSON_KEY, "");
 	        
-	        ObservationStation station = new ObservationStation();
-	        
-	        station.setId(settings.getString(STATION_ID_KEY, ""));
-	        station.setName(settings.getString(STATION_NAME_KEY, "Unknown Location"));
-	        station.setUrl(settings.getString(STATION_URL_KEY, ""));
-	        station.setLatitude(settings.getFloat(STATION_LATITUDE_KEY, 0.0F));
-	        station.setLongitude(settings.getFloat(STATION_LONGITUDE_KEY, 0.0F));
-	        
-	        m_location = new ForecastLocation(locationName, latitude, longitude, station);
+    			m_location = new ForecastLocation(locationJSON);
+    		} catch(Exception e) {
+    			promptException("Error loading saved location:", e);
+    		}
     	} else {
     		m_location = null;
     	}
@@ -229,15 +207,19 @@ public class WeatherNOOKActivity extends Activity {
 		builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 			
 			public void onClick(DialogInterface dialog, int which) {
-				int selectedPos = resultsList.getCheckedItemPosition();
-				if( selectedPos != ListView.INVALID_POSITION ) {
-					m_location = (ForecastLocation) resultsList.getAdapter().getItem(selectedPos);
-					Log.d("WeatherNOOK", "Selected location: " + m_location.toString());
-					Log.d("WeatherNOOK", "Current Condition URL: " + m_location.getObservationStation().getUrl());
-					
-					saveLocation();
-					
-			        refresh();
+				try {
+					int selectedPos = resultsList.getCheckedItemPosition();
+					if( selectedPos != ListView.INVALID_POSITION ) {
+						m_location = (ForecastLocation) resultsList.getAdapter().getItem(selectedPos);
+						Log.d("WeatherNOOK", "Selected location: " + m_location.toString());
+						Log.d("WeatherNOOK", "Current Condition URL: " + m_location.getObservationStation().getUrl());
+						
+						saveLocation();
+						
+				        refresh();
+					}
+				} catch(Exception e) {
+					promptException("Error saving location:", e);
 				}
 			}
 		});
@@ -371,7 +353,7 @@ public class WeatherNOOKActivity extends Activity {
     	@Override
     	protected void onPreExecute() {
     		TextView location = (TextView) findViewById(R.id.currentLocation);
-	        location.setText(String.format(m_locationFormat, m_location));
+	        location.setText(String.format(m_locationFormat, m_location.getShortName()));
 	        m_refreshMessage = String.format("Loading Forecast for %s...", m_location.toString());
     		showDialog(REFRESH_DIALOG);
     		
