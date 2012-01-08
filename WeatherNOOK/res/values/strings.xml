@@ -18,5 +18,6 @@
     <string name="windFormat">Wind: %1$d MPH %2$s</string>
     <string name="humidityFormat">Humidity: %d%%</string>
     <string name="moreInfo">More Information</string>
+    <string name="updatedFormat">Updated %1$tl:%1$tM %1$Tp</string>
 
 </resources>

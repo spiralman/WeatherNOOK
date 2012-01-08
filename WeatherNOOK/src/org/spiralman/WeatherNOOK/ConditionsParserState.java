@@ -1,5 +1,7 @@
 package org.spiralman.WeatherNOOK;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Map;
 import org.spiralman.WeatherNOOK.XmlParser.StackXmlParserState;
 
@@ -21,21 +23,18 @@ class ConditionsInitialState extends ConditionsParserState {
 	@Override
 	public StackXmlParserState startNewTag(String tagName, Map<String,String> attributes) {
 		if( tagName.equals("weather") ) {
-			Log.d("ConditionParser", "parsing weather tag");
 			return new WeatherTagState(m_conditions);
 		} else if( tagName.equals("temp_f")) {
-			Log.d("ConditionParser", "parsing temperature tag");
 			return new TemperatureTagState(m_conditions);
 		} else if( tagName.equals("relative_humidity")) {
-			Log.d("ConditionParser", "parsing humidity tag");
 			return new HumidityTagState(m_conditions);
 		} else if( tagName.equals("wind_dir")) {
-			Log.d("ConditionParser", "parsing wind direction tag");
 			return new WindDirectionTagState(m_conditions);
 		} else if( tagName.equals("wind_mph")) {
-			Log.d("ConditionParser", "parsing wind speed tag");
 			return new WindSpeedTagState(m_conditions);
-		} else {
+		} else if( tagName.equals("observation_time_rfc822")) {
+			return new ObservationTimeTagState(m_conditions);
+		}else {
 			return this;
 		}
 	}
@@ -98,6 +97,20 @@ class WindSpeedTagState extends ConditionsParserState {
 	public void text(String text) {
 		Log.d("ConditionParser", "temperature: " + text);
 		m_conditions.setWindSpeed(Double.parseDouble(text));
+	}
+}
+
+class ObservationTimeTagState extends ConditionsParserState {
+	private static final SimpleDateFormat m_dateParser = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss");
+	
+	ObservationTimeTagState(CurrentConditions conditions) {
+		super(conditions);
+	}
+	
+	@Override
+	public void text(String text) throws ParseException {
+		Log.d("ConditionParser", "observation time: " + text);
+		m_conditions.setObservationTime(m_dateParser.parse(text));
 	}
 }
 

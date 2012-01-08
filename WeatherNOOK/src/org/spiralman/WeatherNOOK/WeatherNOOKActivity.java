@@ -60,6 +60,7 @@ public class WeatherNOOKActivity extends Activity {
 	private String m_tempFormat = null;
 	private String m_windFormat = null;
 	private String m_humidityFormat = null;
+	private String m_updatedFormat = null;
 	
 	private String m_moreInfoText = null;
 	
@@ -83,6 +84,7 @@ public class WeatherNOOKActivity extends Activity {
         m_tempFormat = getString(R.string.currentTempFormat);
         m_windFormat = getString(R.string.windFormat);
         m_humidityFormat = getString(R.string.humidityFormat);
+        m_updatedFormat = getString(R.string.updatedFormat);
         
         m_moreInfoText = getString(R.string.moreInfo);
         
@@ -389,6 +391,7 @@ public class WeatherNOOKActivity extends Activity {
 		        TextView windLabel = (TextView) findViewById(R.id.currentWind);
 		        TextView humidityLabel = (TextView) findViewById(R.id.currentHumidity);
 		        TextView moreInfoLabel = (TextView) findViewById(R.id.moreInformation);
+		        TextView updatedLabel = (TextView) findViewById(R.id.updated);
 		        
 		        conditionImage.setImageResource(ForecastUtils.getIconForForecast(conditions.getConditions(), isDaytime));
 		        conditionLabel.setText(conditions.getConditions());
@@ -404,6 +407,7 @@ public class WeatherNOOKActivity extends Activity {
 		        }
 		        
 		        moreInfoLabel.setMovementMethod(LinkMovementMethod.getInstance());
+		        updatedLabel.setText(String.format(m_updatedFormat, conditions.getObservationTime()));
 		        
 		        View current = findViewById(R.id.currentConditionLayout);
 		        current.setVisibility(View.VISIBLE);

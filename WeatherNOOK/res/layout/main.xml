@@ -76,6 +76,16 @@
             android:text="@string/moreInfo"
             android:textAppearance="?android:attr/textAppearanceMedium" />
 
+        <TextView
+            android:id="@+id/updated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@+id/currentLocation"
+            android:layout_alignBottom="@+id/currentLocation"
+            android:layout_alignParentRight="true"
+            android:text="@string/updatedFormat"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
     </RelativeLayout>
 
     <ListView

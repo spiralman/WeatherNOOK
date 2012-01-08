@@ -71,7 +71,7 @@ class TimeLayoutTag extends ForecastParserState {
 	String key = null;
 	List<TimeRange> ranges = new ArrayList<TimeRange>();
 	
-	private SimpleDateFormat m_dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); 
+	private static final SimpleDateFormat m_dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); 
 	
 	private TimeRange m_currentRange = null;
 	
