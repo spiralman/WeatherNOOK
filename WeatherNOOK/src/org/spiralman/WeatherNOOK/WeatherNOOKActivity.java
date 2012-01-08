@@ -67,6 +67,7 @@ public class WeatherNOOKActivity extends Activity {
 	
 	private LocationRetrieval m_locationRetrieval = null;
 	
+	private RefreshThread m_refreshThread = null;
 	private Runnable m_onStationDBInitComplete = null;
 	
 	private WeatherReport m_report = null;
@@ -75,6 +76,8 @@ public class WeatherNOOKActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        Log.d("WeatherNOOK", "Create");
         
         ForecastBinder.prepareFormatStrings(this);
         WebserviceHelper.prepareUserAgent(this);
@@ -96,14 +99,21 @@ public class WeatherNOOKActivity extends Activity {
         View current = findViewById(R.id.currentConditionLayout);
         current.setVisibility(View.INVISIBLE);
         
-        if( m_location != null ) {
-        	m_report = (WeatherReport) getLastNonConfigurationInstance();
+        Object configInstance = getLastNonConfigurationInstance();
+        
+        if( configInstance instanceof RefreshThread ) {
+        	m_refreshThread = (RefreshThread) configInstance;
+        	m_refreshThread.setActivity(this);
+        } else if( configInstance instanceof WeatherReport ) {
+        	m_report = (WeatherReport) configInstance;
         }
     }
     
     @Override
     public void onStart() {
     	super.onStart();
+    	
+    	Log.d("WeatherNOOK", "Start");
     	
     	if( m_location != null ) {
         	if( m_report != null ) {
@@ -115,7 +125,7 @@ public class WeatherNOOKActivity extends Activity {
         		} else {
         			displayReport();
         		}
-        	} else {
+        	} else if( m_refreshThread == null ) {
         		refresh();
         	}
         } else {
@@ -126,17 +136,29 @@ public class WeatherNOOKActivity extends Activity {
     @Override
     public void onDestroy() {
     	super.onDestroy();
-    	m_locationRetrieval.getObservationStationDB().close();
+    	
+    	Log.d("WeatherNOOK", "Destroy");
+    	
+    	if( m_locationRetrieval != null ) {
+    		m_locationRetrieval.getObservationStationDB().close();
+    	}
     }
     
     @Override
     public Object onRetainNonConfigurationInstance() {
-    	return m_report;
+    	Log.d("WeatherNOOK", "Retain");
+    	
+    	if( m_refreshThread != null ) {
+    		return m_refreshThread;
+    	} else {
+    		return m_report;
+    	}
     }
     
     private void refresh() {
     	if( m_location != null) {
-    		new RefreshThread().execute();
+    		m_refreshThread = new RefreshThread(this);
+    		m_refreshThread.execute();
     	}
     }
     
@@ -200,12 +222,15 @@ public class WeatherNOOKActivity extends Activity {
         list.setAdapter(adapter);
         
         ImageView conditionImage = (ImageView) findViewById(R.id.currentImage);
+        TextView location = (TextView) findViewById(R.id.currentLocation);
         TextView conditionLabel = (TextView) findViewById(R.id.currentCondition);
         TextView tempLabel = (TextView) findViewById(R.id.currentTemp);
         TextView windLabel = (TextView) findViewById(R.id.currentWind);
         TextView humidityLabel = (TextView) findViewById(R.id.currentHumidity);
         TextView moreInfoLabel = (TextView) findViewById(R.id.moreInformation);
         TextView updatedLabel = (TextView) findViewById(R.id.updated);
+        
+        location.setText(String.format(m_locationFormat, m_location.getShortName()));
         
         conditionImage.setImageResource(ForecastUtils.getIconForForecast(conditions.getConditions(), isDaytime));
         conditionLabel.setText(conditions.getConditions());
@@ -312,6 +337,7 @@ public class WeatherNOOKActivity extends Activity {
     protected Dialog onCreateDialog(int id) {
         switch(id) {
         case REFRESH_DIALOG:
+        	Log.d("WeatherNOOK", "Create refresh");
         	m_progressDialog = new ProgressDialog(WeatherNOOKActivity.this);
             m_progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
             return m_progressDialog;
@@ -340,12 +366,21 @@ public class WeatherNOOKActivity extends Activity {
     	
     	switch(id) {
     	case REFRESH_DIALOG:
+    		Log.d("WeatherNOOK", "Prepare refresh");
     		m_progressDialog.setMessage(m_refreshMessage);
     		break;
     	case ERROR_DIALOG:
     		AlertDialog errorDialog = (AlertDialog) dialog;
     		errorDialog.setMessage("Error: " + m_lastError);
     		break;
+    	}
+    }
+    
+    private void hideRefreshDialog() {
+    	if( m_progressDialog != null ) {
+    		Log.d("WeatherNOOK", "Hiding refresh dialog");
+    		
+    		m_progressDialog.dismiss();
     	}
     }
     
@@ -395,7 +430,7 @@ public class WeatherNOOKActivity extends Activity {
     		m_locationRetrieval = retrieval;
     		
     		if( m_onStationDBInitComplete != null ) {
-    			dismissDialog(REFRESH_DIALOG);
+    			hideRefreshDialog();
     		}
     		
     		if( m_exception == null ) {
@@ -411,6 +446,14 @@ public class WeatherNOOKActivity extends Activity {
     
     private class RefreshThread extends AsyncTask<Void, Void, WeatherReport> {
     	Exception m_exception = null;
+    	WeatherNOOKActivity m_currentActivity = null;
+    	String m_newRefreshMessage = null;
+    	
+    	WeatherReport m_newReport = null;
+    	
+    	public RefreshThread(WeatherNOOKActivity activity) {
+    		m_currentActivity = activity;
+    	}
     	
     	public WeatherReport doInBackground(Void... v) {
     		WeatherReport report = null;
@@ -428,23 +471,47 @@ public class WeatherNOOKActivity extends Activity {
     	
     	@Override
     	protected void onPreExecute() {
-    		TextView location = (TextView) findViewById(R.id.currentLocation);
-	        location.setText(String.format(m_locationFormat, m_location.getShortName()));
-	        m_refreshMessage = String.format("Loading Forecast for %s...", m_location.toString());
-    		showDialog(REFRESH_DIALOG);
+    		Log.d("WeatherNOOK", "Starting refresh");
     		
-    		m_progressDialog.setProgress(0);
+	        m_newRefreshMessage = String.format("Loading Forecast for %s...", m_location.toString());
+	        
+	        m_currentActivity.m_refreshMessage = m_newRefreshMessage;
+	        m_currentActivity.showDialog(REFRESH_DIALOG);
     	}
     	
     	@Override
     	protected void onPostExecute(WeatherReport report) {
-    		dismissDialog(REFRESH_DIALOG);
+    		Log.d("WeatherNOOK", "Refresh complete");
     		
-    		if( m_exception == null ) {
-    			m_report = report;
-	    		displayReport();
-    		} else {
-    			promptException("Error loading weather report:", m_exception);
+    		m_newReport = report;
+    		
+    		notifyComplete();
+    	}
+    	
+    	public void setActivity(WeatherNOOKActivity activity) {
+    		m_currentActivity = activity;
+    		
+    		if( m_currentActivity != null ) {
+    			m_currentActivity.m_refreshMessage = m_newRefreshMessage;
+    		}
+    		
+    		if( m_newReport != null ) {
+    			notifyComplete();
+    		}
+    	}
+    	
+    	private void notifyComplete() {
+    		if( m_currentActivity != null ) {
+    			m_currentActivity.hideRefreshDialog();
+	    		
+	    		if( m_exception == null ) {
+	    			m_currentActivity.m_report = m_newReport;
+	    			m_currentActivity.displayReport();
+	    		} else {
+	    			m_currentActivity.promptException("Error loading weather report:", m_exception);
+	    		}
+	    		
+	    		m_currentActivity.m_refreshThread = null;
     		}
     	}
     }
