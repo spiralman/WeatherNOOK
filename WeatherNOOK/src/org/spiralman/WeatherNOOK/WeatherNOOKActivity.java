@@ -68,6 +68,8 @@ public class WeatherNOOKActivity extends Activity {
 	
 	private Runnable m_onStationDBInitComplete = null;
 	
+	private WeatherReport m_report = null;
+	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -94,7 +96,12 @@ public class WeatherNOOKActivity extends Activity {
         current.setVisibility(View.INVISIBLE);
         
         if( m_location != null ) {
-        	refresh();
+        	m_report = (WeatherReport) getLastNonConfigurationInstance();
+        	if( m_report != null ) {
+        		displayReport();
+        	} else {
+        		refresh();
+        	}
         } else {
         	showConfigDialog();
         }
@@ -104,6 +111,11 @@ public class WeatherNOOKActivity extends Activity {
     public void onDestroy() {
     	super.onDestroy();
     	m_locationRetrieval.getObservationStationDB().close();
+    }
+    
+    @Override
+    public Object onRetainNonConfigurationInstance() {
+    	return m_report;
     }
     
     private void refresh() {
@@ -141,7 +153,6 @@ public class WeatherNOOKActivity extends Activity {
     	if( settings.contains(LOCATION_JSON_KEY) ) {
     		
     		try {
-	    	
     			String locationJSON = settings.getString(LOCATION_JSON_KEY, "");
 	        
     			m_location = new ForecastLocation(locationJSON);
@@ -151,6 +162,53 @@ public class WeatherNOOKActivity extends Activity {
     	} else {
     		m_location = null;
     	}
+    }
+    
+    private void displayReport() {
+    	CurrentConditions conditions = m_report.getCurrentConditions();
+		
+		List< Map<String, Forecast> > forecastMap = new ArrayList< Map<String,Forecast> >();
+		
+		boolean isDaytime = ForecastUtils.isDaytimeNow();
+		
+		for( Forecast forecast : m_report.getForecast() ) {
+    		Map<String, Forecast> columnMap = new HashMap<String, Forecast>();
+    		columnMap.put("Forecast", forecast);
+    		forecastMap.add(columnMap);
+    	}
+		
+		SimpleAdapter adapter = new SimpleAdapter(WeatherNOOKActivity.this, forecastMap, R.layout.forecast_entry, new String[] {"Forecast"}, new int[] {R.id.forecastLayout});
+        adapter.setViewBinder(new ForecastBinder());
+        
+        ListView list = (ListView) findViewById(R.id.forecastList);
+        list.setAdapter(adapter);
+        
+        ImageView conditionImage = (ImageView) findViewById(R.id.currentImage);
+        TextView conditionLabel = (TextView) findViewById(R.id.currentCondition);
+        TextView tempLabel = (TextView) findViewById(R.id.currentTemp);
+        TextView windLabel = (TextView) findViewById(R.id.currentWind);
+        TextView humidityLabel = (TextView) findViewById(R.id.currentHumidity);
+        TextView moreInfoLabel = (TextView) findViewById(R.id.moreInformation);
+        TextView updatedLabel = (TextView) findViewById(R.id.updated);
+        
+        conditionImage.setImageResource(ForecastUtils.getIconForForecast(conditions.getConditions(), isDaytime));
+        conditionLabel.setText(conditions.getConditions());
+        moreInfoLabel.setText(Html.fromHtml(String.format("<a href=\"%1$s\">%2$s</a>", m_report.getUrl(), m_moreInfoText)));
+        tempLabel.setText(String.format(m_tempFormat, Math.round(conditions.getTemperature())));
+        windLabel.setText(String.format(m_windFormat, Math.round(conditions.getWindSpeed()), conditions.getWindDirAbbreviation()));
+        
+        if( conditions.getHumidity() >= 0 ) {
+        	humidityLabel.setVisibility(View.VISIBLE);
+        	humidityLabel.setText(String.format(m_humidityFormat, conditions.getHumidity()));
+        } else {
+        	humidityLabel.setVisibility(View.INVISIBLE);
+        }
+        
+        moreInfoLabel.setMovementMethod(LinkMovementMethod.getInstance());
+        updatedLabel.setText(String.format(m_updatedFormat, conditions.getObservationTime()));
+        
+        View current = findViewById(R.id.currentConditionLayout);
+        current.setVisibility(View.VISIBLE);
     }
     
     @Override
@@ -367,50 +425,8 @@ public class WeatherNOOKActivity extends Activity {
     		dismissDialog(REFRESH_DIALOG);
     		
     		if( m_exception == null ) {
-	    		CurrentConditions conditions = report.getCurrentConditions();
-				
-				List< Map<String, Forecast> > forecastMap = new ArrayList< Map<String,Forecast> >();
-				
-				boolean isDaytime = ForecastUtils.isDaytimeNow();
-				
-				for( Forecast forecast : report.getForecast() ) {
-	        		Map<String, Forecast> columnMap = new HashMap<String, Forecast>();
-	        		columnMap.put("Forecast", forecast);
-	        		forecastMap.add(columnMap);
-	        	}
-				
-				SimpleAdapter adapter = new SimpleAdapter(WeatherNOOKActivity.this, forecastMap, R.layout.forecast_entry, new String[] {"Forecast"}, new int[] {R.id.forecastLayout});
-		        adapter.setViewBinder(new ForecastBinder());
-		        
-		        ListView list = (ListView) findViewById(R.id.forecastList);
-		        list.setAdapter(adapter);
-		        
-		        ImageView conditionImage = (ImageView) findViewById(R.id.currentImage);
-		        TextView conditionLabel = (TextView) findViewById(R.id.currentCondition);
-		        TextView tempLabel = (TextView) findViewById(R.id.currentTemp);
-		        TextView windLabel = (TextView) findViewById(R.id.currentWind);
-		        TextView humidityLabel = (TextView) findViewById(R.id.currentHumidity);
-		        TextView moreInfoLabel = (TextView) findViewById(R.id.moreInformation);
-		        TextView updatedLabel = (TextView) findViewById(R.id.updated);
-		        
-		        conditionImage.setImageResource(ForecastUtils.getIconForForecast(conditions.getConditions(), isDaytime));
-		        conditionLabel.setText(conditions.getConditions());
-		        moreInfoLabel.setText(Html.fromHtml(String.format("<a href=\"%1$s\">%2$s</a>", report.getUrl(), m_moreInfoText)));
-		        tempLabel.setText(String.format(m_tempFormat, Math.round(conditions.getTemperature())));
-		        windLabel.setText(String.format(m_windFormat, Math.round(conditions.getWindSpeed()), conditions.getWindDirAbbreviation()));
-		        
-		        if( conditions.getHumidity() >= 0 ) {
-		        	humidityLabel.setVisibility(View.VISIBLE);
-		        	humidityLabel.setText(String.format(m_humidityFormat, conditions.getHumidity()));
-		        } else {
-		        	humidityLabel.setVisibility(View.INVISIBLE);
-		        }
-		        
-		        moreInfoLabel.setMovementMethod(LinkMovementMethod.getInstance());
-		        updatedLabel.setText(String.format(m_updatedFormat, conditions.getObservationTime()));
-		        
-		        View current = findViewById(R.id.currentConditionLayout);
-		        current.setVisibility(View.VISIBLE);
+    			m_report = report;
+	    		displayReport();
     		} else {
     			promptException("Error loading weather report:", m_exception);
     		}
