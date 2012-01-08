@@ -23,8 +23,6 @@ import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.text.Html;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
@@ -47,9 +45,6 @@ public class WeatherNOOKActivity extends Activity {
 	private final int CONFIGURE_DIALOG = 1;
 	private final int ERROR_DIALOG = 2;
 	
-	private final int FETCH_SUCCESS = 0;
-	private final int FETCH_ERROR = 1;
-	
 	private final String LATITUDE_KEY = "ForecastLatitude";
 	private final String LONGITUDE_KEY = "ForecastLongitude";
 	private final String LOCATION_KEY = "ForecastLocation";
@@ -61,7 +56,6 @@ public class WeatherNOOKActivity extends Activity {
 	private static final String STATION_LONGITUDE_KEY = "StationLongitude";
 	
 	private ProgressDialog m_progressDialog = null;
-	private RefreshThread m_refreshThread = null;
 	private AlertDialog m_configDialog = null;
 	
 	private ForecastLocation m_location = null;
@@ -89,8 +83,7 @@ public class WeatherNOOKActivity extends Activity {
         ForecastBinder.prepareFormatStrings(this);
         WebserviceHelper.prepareUserAgent(this);
         
-        LocationInitializeThread locationInit = new LocationInitializeThread();
-        locationInit.execute((Void)null);
+        new LocationInitializeThread().execute();
         
         loadLocation();
         
@@ -121,15 +114,22 @@ public class WeatherNOOKActivity extends Activity {
     
     private void refresh() {
     	if( m_location != null) {
-    		TextView location = (TextView) findViewById(R.id.currentLocation);
-	        location.setText(String.format(m_locationFormat, m_location));
-	        m_refreshMessage = String.format("Loading Forecast for %s...", m_location.toString());
-    		showDialog(REFRESH_DIALOG);
-    		
-    		m_progressDialog.setProgress(0);
-        	m_refreshThread = new RefreshThread(refreshHandler);
-        	m_refreshThread.start();
+    		new RefreshThread().execute();
     	}
+    }
+    
+    private void showConfigDialog() {
+    	if( m_locationRetrieval != null ) {
+			showDialog(CONFIGURE_DIALOG);
+		} else {
+			m_onStationDBInitComplete = new Runnable() {
+				public void run() {
+					showDialog(CONFIGURE_DIALOG);
+				}
+			};
+			m_refreshMessage = "Initializing Weather Station Database...";
+			showDialog(REFRESH_DIALOG);
+		}
     }
     
     private void saveLocation() {
@@ -173,6 +173,29 @@ public class WeatherNOOKActivity extends Activity {
     	}
     }
     
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.options_menu, menu);
+        return true;
+    }
+
+    @Override
+	public boolean onOptionsItemSelected(MenuItem selected) {
+		switch(selected.getItemId()) {
+		case R.id.refresh:
+			Log.d("WeatherNOOK", "refresh");
+			refresh();
+			return true;
+		case R.id.configure:
+			Log.d("WeatherNOOK", "configure");
+			showConfigDialog();
+			return true;
+		default:
+			return super.onOptionsItemSelected(selected);
+		}
+	}
+    
     private AlertDialog createConfigDialog() {
     	LayoutInflater inflater = LayoutInflater.from(this);
 		View content = inflater.inflate(R.layout.configure_layout, null);
@@ -193,7 +216,7 @@ public class WeatherNOOKActivity extends Activity {
 						resultsList.setItemChecked(0, true);
 					}
 				} catch (Exception e) {
-					Log.d("WeatherNOOK", "Problem using geocoder: " + e.getMessage());
+					promptException("Error looking up location:", e);
 				}
 				
 			}
@@ -227,43 +250,6 @@ public class WeatherNOOKActivity extends Activity {
     	
     	return builder.create();
     }
-    
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.options_menu, menu);
-        return true;
-    }
-    
-    private void showConfigDialog() {
-    	if( m_locationRetrieval != null ) {
-			showDialog(CONFIGURE_DIALOG);
-		} else {
-			m_onStationDBInitComplete = new Runnable() {
-				public void run() {
-					showDialog(CONFIGURE_DIALOG);
-				}
-			};
-			m_refreshMessage = "Initializing Weather Station Database...";
-			showDialog(REFRESH_DIALOG);
-		}
-    }
-
-    @Override
-	public boolean onOptionsItemSelected(MenuItem selected) {
-		switch(selected.getItemId()) {
-		case R.id.refresh:
-			Log.d("WeatherNOOK", "refresh");
-			refresh();
-			return true;
-		case R.id.configure:
-			Log.d("WeatherNOOK", "configure");
-			showConfigDialog();
-			return true;
-		default:
-			return super.onOptionsItemSelected(selected);
-		}
-	}
     
     protected Dialog onCreateDialog(int id) {
         switch(id) {
@@ -305,23 +291,109 @@ public class WeatherNOOKActivity extends Activity {
     	}
     }
     
-    final Handler refreshHandler = new Handler() {
-    	public void handleMessage(Message m) {
+    private void promptException(String message, Exception e) {
+    	logException(e);
+    	m_lastError = message + " " + e.getLocalizedMessage();
+		showDialog(ERROR_DIALOG);
+    }
+    
+    private void logException(Exception e) {
+    	Log.d("WetherNOOK", "Exception: " + e.getMessage());
+    	Log.d("WeatherNOOK", e.getClass().toString());
+    	for( StackTraceElement element : e.getStackTrace()) {
+    		Log.d("WeatherNOOK", "\tat" + element.toString());
+    	}
+    }
+    
+	private class LocationInitializeThread extends AsyncTask<Void, Void, LocationRetrieval> {
+		Exception m_exception = null;
+		
+		public LocationRetrieval doInBackground(Void... handlers) {
+    		LocationRetrieval locationRetrieval = null;
+    		
+    		try
+            {
+    			ObservationStationDB stationDB = new ObservationStationDB(WeatherNOOKActivity.this);
+    			stationDB.open();
+    			
+    			if( !stationDB.isInitialized() ) {
+    				AssetManager assets = getAssets();
+            	
+    				stationDB.importStations(new InputStreamReader(assets.open("noaa_weather_station_index.xml")));
+    			}
+    			
+    			locationRetrieval = new LocationRetrieval(stationDB);
+            }
+            catch(Exception e)
+            {
+            	m_exception = e;
+            }
+    		
+    		return locationRetrieval;
+    	}
+    	
+    	@Override
+    	protected void onPostExecute(LocationRetrieval retrieval) {
+    		m_locationRetrieval = retrieval;
+    		
+    		if( m_onStationDBInitComplete != null ) {
+    			dismissDialog(REFRESH_DIALOG);
+    		}
+    		
+    		if( m_exception == null ) {
+    			if( m_onStationDBInitComplete != null ) {
+    				m_onStationDBInitComplete.run();
+    				m_onStationDBInitComplete = null;
+    			}
+			} else {
+				promptException("Error initializing Weather Station Database:", m_exception);
+			}
+    	}
+    }
+    
+    private class RefreshThread extends AsyncTask<Void, Void, WeatherReport> {
+    	Exception m_exception = null;
+    	
+    	public WeatherReport doInBackground(Void... v) {
+    		WeatherReport report = null;
+    		try
+            {
+            	report = WeatherReport.getWeather(m_location);
+            }
+            catch(Exception e)
+            {
+            	m_exception = e;
+            }
+            
+            return report;
+    	}
+    	
+    	@Override
+    	protected void onPreExecute() {
+    		TextView location = (TextView) findViewById(R.id.currentLocation);
+	        location.setText(String.format(m_locationFormat, m_location));
+	        m_refreshMessage = String.format("Loading Forecast for %s...", m_location.toString());
+    		showDialog(REFRESH_DIALOG);
+    		
+    		m_progressDialog.setProgress(0);
+    	}
+    	
+    	@Override
+    	protected void onPostExecute(WeatherReport report) {
     		dismissDialog(REFRESH_DIALOG);
-    		switch(m.what) {
-    		case FETCH_SUCCESS:
-    			WeatherReport report = (WeatherReport)m.obj;
-    			CurrentConditions conditions = report.getCurrentConditions();
-    			
-    			List< Map<String, Forecast> > forecastMap = new ArrayList< Map<String,Forecast> >();
-    			
-    			boolean isDaytime = ForecastUtils.isDaytimeNow();
+    		
+    		if( m_exception == null ) {
+	    		CurrentConditions conditions = report.getCurrentConditions();
+				
+				List< Map<String, Forecast> > forecastMap = new ArrayList< Map<String,Forecast> >();
+				
+				boolean isDaytime = ForecastUtils.isDaytimeNow();
 				
 				for( Forecast forecast : report.getForecast() ) {
-            		Map<String, Forecast> columnMap = new HashMap<String, Forecast>();
-            		columnMap.put("Forecast", forecast);
-            		forecastMap.add(columnMap);
-            	}
+	        		Map<String, Forecast> columnMap = new HashMap<String, Forecast>();
+	        		columnMap.put("Forecast", forecast);
+	        		forecastMap.add(columnMap);
+	        	}
 				
 				SimpleAdapter adapter = new SimpleAdapter(WeatherNOOKActivity.this, forecastMap, R.layout.forecast_entry, new String[] {"Forecast"}, new int[] {R.id.forecastLayout});
 		        adapter.setViewBinder(new ForecastBinder());
@@ -353,92 +425,9 @@ public class WeatherNOOKActivity extends Activity {
 		        
 		        View current = findViewById(R.id.currentConditionLayout);
 		        current.setVisibility(View.VISIBLE);
-		        
-		        break;
-    		case FETCH_ERROR:
-    			m_lastError = (String)m.obj;
-    			showDialog(ERROR_DIALOG);
-    			break;
+    		} else {
+    			promptException("Error loading weather report:", m_exception);
     		}
-    	}
-    };
-    
-	private class LocationInitializeThread extends AsyncTask<Void, Void, LocationRetrieval> {
-		Exception m_exception = null;
-		
-		public LocationRetrieval doInBackground(Void... handlers) {
-    		LocationRetrieval locationRetrieval = null;
-    		
-    		try
-            {
-    			ObservationStationDB stationDB = new ObservationStationDB(WeatherNOOKActivity.this);
-    			stationDB.open();
-    			
-    			if( !stationDB.isInitialized() ) {
-    				AssetManager assets = getAssets();
-            	
-    				stationDB.importStations(new InputStreamReader(assets.open("noaa_weather_station_index.xml")));
-    			}
-    			
-    			locationRetrieval = new LocationRetrieval(stationDB);
-            }
-            catch(Exception e)
-            {
-            	Log.d("WeatherNOOK", e.getMessage());
-            	
-            	m_exception = e;
-            }
-    		
-    		return locationRetrieval;
-    	}
-    	
-    	@Override
-    	protected void onPostExecute(LocationRetrieval retrieval) {
-    		m_locationRetrieval = retrieval;
-    		
-    		if( m_exception == null ) {
-    			dismissDialog(REFRESH_DIALOG);
-    			
-    			if( m_onStationDBInitComplete != null ) {
-    				m_onStationDBInitComplete.run();
-    				m_onStationDBInitComplete = null;
-    			}
-			} else {
-				dismissDialog(REFRESH_DIALOG);
-    			m_lastError = m_exception.getLocalizedMessage();
-    			showDialog(ERROR_DIALOG);
-			}
-    	}
-    }
-    
-    private class RefreshThread extends Thread {
-    	Handler m_handler = null;
-    	
-    	RefreshThread(Handler handler) {
-    		m_handler = handler;
-    	}
-    	
-    	public void run() {
-    		Message done = m_handler.obtainMessage();
-    		
-            try
-            {
-            	WeatherReport report = WeatherReport.getWeather(m_location);
-            	
-            	done.what = FETCH_SUCCESS;
-            	done.obj = report;
-            }
-            catch(Exception e)
-            {
-            	Log.d("WeatherNOOK", e.getClass().toString());
-            	for( StackTraceElement element : e.getStackTrace()) {
-            		Log.d("WeatherNOOK", element.toString());
-            	}
-            	done.what = FETCH_ERROR;
-            	done.obj = e.getMessage();
-            }
-            
-            m_handler.sendMessage(done);
     	}
     }
 }

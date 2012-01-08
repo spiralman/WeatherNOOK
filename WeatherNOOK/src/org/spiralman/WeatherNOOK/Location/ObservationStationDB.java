@@ -1,7 +1,6 @@
 package org.spiralman.WeatherNOOK.Location;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.text.ParseException;
 import java.util.Map;
@@ -153,10 +152,6 @@ public class ObservationStationDB extends SQLiteOpenHelper {
 	private static final String STATION_URL_COL = "URL";
 	private static final String STATION_LATITUDE_COL = "Latitude";
 	private static final String STATION_LONGITUDE_COL = "Longitude";
-	
-	public static final int INITIALIZE_SUCCESS = 0;
-	public static final int INITIALIZE_STARTING = 1;
-	public static final int INITIALIZE_ERROR = 2;
 	
 	private static final String CREATE_STATION_TABLE = 
 			"CREATE TABLE " + STATION_TABLE + " ( " +

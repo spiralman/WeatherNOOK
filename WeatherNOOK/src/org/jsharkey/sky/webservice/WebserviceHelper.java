@@ -81,7 +81,7 @@ public class WebserviceHelper {
      * Open a request to the given URL, returning a {@link Reader} across the
      * response from that API.
      */
-    public static Reader queryApi(String url) throws ParseException {
+    public static Reader queryApi(String url) throws ParseException, IOException {
         if (sUserAgent == null) {
             throw new ParseException("Must prepare user agent string");
         }
@@ -90,18 +90,13 @@ public class WebserviceHelper {
         HttpGet request = new HttpGet(url);
         request.setHeader("User-Agent", sUserAgent);
 
-        try {
-            HttpResponse response = sClient.execute(request);
+        HttpResponse response = sClient.execute(request);
 
-            StatusLine status = response.getStatusLine();
-            Log.d(TAG, "Request returned status " + status);
+        StatusLine status = response.getStatusLine();
+        Log.d(TAG, "Request returned status " + status);
 
-            HttpEntity entity = response.getEntity();
-            reader = new InputStreamReader(entity.getContent());
-
-        } catch (IOException e) {
-            throw new ParseException("Problem calling forecast API", e);
-        }
+        HttpEntity entity = response.getEntity();
+        reader = new InputStreamReader(entity.getContent());
         
         return reader;
     }

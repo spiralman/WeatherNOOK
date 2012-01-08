@@ -166,7 +166,7 @@ public class NoaaSource implements ForecastSource {
     /**
      * {@inheritDoc}
      */
-    public List<Forecast> getForecasts(double lat, double lon, int days) throws ParseException {
+    public List<Forecast> getForecasts(double lat, double lon, int days) throws ParseException, IOException {
         if (Double.isNaN(lat) || Double.isNaN(lon)) {
             throw new ParseException("Requested forecast for invalid location");
         } else {
