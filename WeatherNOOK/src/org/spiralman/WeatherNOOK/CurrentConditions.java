@@ -98,7 +98,7 @@ public class CurrentConditions {
 	private void updateRefreshAfter() {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(m_observationTime);
-		calendar.add(Calendar.HOUR_OF_DAY, m_pickupPeriod);
+		calendar.add(Calendar.MINUTE, m_pickupPeriod);
 		m_refreshAfter = calendar.getTime();
 	}
 
