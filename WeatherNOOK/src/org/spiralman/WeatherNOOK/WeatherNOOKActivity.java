@@ -104,6 +104,7 @@ public class WeatherNOOKActivity extends Activity {
         
         Object configInstance = getLastNonConfigurationInstance();
         
+        // TODO: This has gotten complex enough it should really be a state machine (along with onStart()).
         if( configInstance instanceof LocationInitializeThread ) {
         	Log.d("WeatherNOOK", "Restore with location init thread");
         	m_locationInitThread = (LocationInitializeThread) configInstance;
@@ -411,6 +412,7 @@ public class WeatherNOOKActivity extends Activity {
     	}
     }
     
+    // TODO: Should refactor the common logic out of these two into a base class (use Generics for Result).
 	private class LocationInitializeThread extends AsyncTask<ObservationStationDB, Void, LocationRetrieval> {
 		Exception m_exception = null;
 		
