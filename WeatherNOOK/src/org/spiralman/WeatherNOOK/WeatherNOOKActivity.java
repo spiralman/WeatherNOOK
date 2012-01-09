@@ -66,11 +66,13 @@ public class WeatherNOOKActivity extends Activity {
 	private String m_moreInfoText = null;
 	
 	private LocationRetrieval m_locationRetrieval = null;
+	private LocationInitializeThread m_locationInitThread = null;
 	
 	private RefreshThread m_refreshThread = null;
 	private Runnable m_onStationDBInitComplete = null;
 	
 	private WeatherReport m_report = null;
+	private boolean m_didRestoreReport = false;
 	
     /** Called when the activity is first created. */
     @Override
@@ -81,8 +83,6 @@ public class WeatherNOOKActivity extends Activity {
         
         ForecastBinder.prepareFormatStrings(this);
         WebserviceHelper.prepareUserAgent(this);
-        
-        new LocationInitializeThread().execute();
         
         loadLocation();
         
@@ -99,13 +99,34 @@ public class WeatherNOOKActivity extends Activity {
         View current = findViewById(R.id.currentConditionLayout);
         current.setVisibility(View.INVISIBLE);
         
+        ObservationStationDB stationDB = new ObservationStationDB(WeatherNOOKActivity.this);
+		stationDB.open();
+        
         Object configInstance = getLastNonConfigurationInstance();
         
-        if( configInstance instanceof RefreshThread ) {
-        	m_refreshThread = (RefreshThread) configInstance;
-        	m_refreshThread.setActivity(this);
-        } else if( configInstance instanceof WeatherReport ) {
-        	m_report = (WeatherReport) configInstance;
+        if( configInstance instanceof LocationInitializeThread ) {
+        	Log.d("WeatherNOOK", "Restore with location init thread");
+        	m_locationInitThread = (LocationInitializeThread) configInstance;
+        	m_locationInitThread.setActivity(this);
+        } else {
+	        if( !stationDB.isInitialized() ) {
+				m_locationInitThread = new LocationInitializeThread(this);
+				m_locationInitThread.execute(stationDB);
+			} else {
+				m_locationRetrieval =  new LocationRetrieval(stationDB);
+				
+				if( configInstance instanceof RefreshThread ) {
+					Log.d("WeatherNOOK", "Restore with refresh thread");
+					
+		        	m_refreshThread = (RefreshThread) configInstance;
+		        	m_refreshThread.setActivity(this);
+		        } else if( configInstance instanceof WeatherReport ) {
+		        	Log.d("WeatherNOOK", "Restore with report");
+		        	
+		        	m_report = (WeatherReport) configInstance;
+		        	m_didRestoreReport = true;
+		        }
+			}
         }
     }
     
@@ -115,12 +136,12 @@ public class WeatherNOOKActivity extends Activity {
     	
     	Log.d("WeatherNOOK", "Start");
     	
-    	if( m_location != null ) {
+    	if( m_locationRetrieval != null && m_location != null ) {
         	if( m_report != null ) {
         		Date now = new Date();
         		Date refreshAfter = m_report.getCurrentConditions().getRefreshAfter();
         		
-        		if( refreshAfter != null && now.after(refreshAfter) ) {
+        		if( !m_didRestoreReport && refreshAfter != null && now.after(refreshAfter) ) {
         			refresh();
         		} else {
         			displayReport();
@@ -128,9 +149,7 @@ public class WeatherNOOKActivity extends Activity {
         	} else if( m_refreshThread == null ) {
         		refresh();
         	}
-        } else {
-        	showConfigDialog();
-        }
+    	}
     }
     
     @Override
@@ -150,6 +169,8 @@ public class WeatherNOOKActivity extends Activity {
     	
     	if( m_refreshThread != null ) {
     		return m_refreshThread;
+    	} else if( m_locationInitThread != null ) {
+    		return m_locationInitThread;
     	} else {
     		return m_report;
     	}
@@ -157,23 +178,15 @@ public class WeatherNOOKActivity extends Activity {
     
     private void refresh() {
     	if( m_location != null) {
+    		m_didRestoreReport = false;
+    		
     		m_refreshThread = new RefreshThread(this);
     		m_refreshThread.execute();
     	}
     }
     
     private void showConfigDialog() {
-    	if( m_locationRetrieval != null ) {
-			showDialog(CONFIGURE_DIALOG);
-		} else {
-			m_onStationDBInitComplete = new Runnable() {
-				public void run() {
-					showDialog(CONFIGURE_DIALOG);
-				}
-			};
-			m_refreshMessage = "Initializing Weather Station Database...";
-			showDialog(REFRESH_DIALOG);
-		}
+    	showDialog(CONFIGURE_DIALOG);
     }
     
     private void saveLocation() throws JSONException {
@@ -398,22 +411,27 @@ public class WeatherNOOKActivity extends Activity {
     	}
     }
     
-	private class LocationInitializeThread extends AsyncTask<Void, Void, LocationRetrieval> {
+	private class LocationInitializeThread extends AsyncTask<ObservationStationDB, Void, LocationRetrieval> {
 		Exception m_exception = null;
 		
-		public LocationRetrieval doInBackground(Void... handlers) {
+		String m_newRefreshMessage = null;
+		LocationRetrieval m_result = null;
+		
+		WeatherNOOKActivity m_currentActivity = null;
+		
+		public LocationInitializeThread(WeatherNOOKActivity activity) {
+			m_currentActivity = activity;
+		}
+		
+		public LocationRetrieval doInBackground(ObservationStationDB... stationDBs) {
     		LocationRetrieval locationRetrieval = null;
+    		ObservationStationDB stationDB = stationDBs[0];
     		
     		try
             {
-    			ObservationStationDB stationDB = new ObservationStationDB(WeatherNOOKActivity.this);
-    			stationDB.open();
-    			
-    			if( !stationDB.isInitialized() ) {
-    				AssetManager assets = getAssets();
-            	
-    				stationDB.importStations(new InputStreamReader(assets.open("noaa_weather_station_index.xml")));
-    			}
+				AssetManager assets = getAssets();
+        	
+				stationDB.importStations(new InputStreamReader(assets.open("noaa_weather_station_index.xml")));
     			
     			locationRetrieval = new LocationRetrieval(stationDB);
             }
@@ -424,23 +442,52 @@ public class WeatherNOOKActivity extends Activity {
     		
     		return locationRetrieval;
     	}
+		
+		@Override
+		protected void onPreExecute() {
+			Log.d("WeatherNOOK", "Starting initialize Station DB");
+    		
+	        m_newRefreshMessage = "Initializing Weather Station Database...";
+	        
+	        m_currentActivity.m_refreshMessage = m_newRefreshMessage;
+	        m_currentActivity.showDialog(REFRESH_DIALOG);
+		}
     	
     	@Override
     	protected void onPostExecute(LocationRetrieval retrieval) {
-    		m_locationRetrieval = retrieval;
+    		m_result = retrieval;
     		
-    		if( m_onStationDBInitComplete != null ) {
-    			hideRefreshDialog();
+    		if( m_currentActivity != null ) {
+    			notifyComplete();
+    		}
+    	}
+    	
+    	public void setActivity(WeatherNOOKActivity activity) {
+    		m_currentActivity = activity;
+    		
+    		if( m_currentActivity != null ) {
+    			m_currentActivity.m_refreshMessage = m_newRefreshMessage;
+    		}
+    		
+    		if( m_result != null ) {
+    			notifyComplete();
+    		}
+    	}
+    	
+    	private void notifyComplete() {
+    		m_currentActivity.m_locationRetrieval = m_result;
+    		
+    		if( m_currentActivity.m_onStationDBInitComplete != null ) {
+    			m_currentActivity.hideRefreshDialog();
     		}
     		
     		if( m_exception == null ) {
-    			if( m_onStationDBInitComplete != null ) {
-    				m_onStationDBInitComplete.run();
-    				m_onStationDBInitComplete = null;
-    			}
+    			m_currentActivity.showConfigDialog();
 			} else {
-				promptException("Error initializing Weather Station Database:", m_exception);
+				m_currentActivity.promptException("Error initializing Weather Station Database:", m_exception);
 			}
+    		
+    		m_currentActivity.m_locationInitThread = null;
     	}
     }
     
@@ -485,7 +532,9 @@ public class WeatherNOOKActivity extends Activity {
     		
     		m_newReport = report;
     		
-    		notifyComplete();
+    		if( m_currentActivity != null ) {
+    			notifyComplete();
+    		}
     	}
     	
     	public void setActivity(WeatherNOOKActivity activity) {
@@ -501,18 +550,17 @@ public class WeatherNOOKActivity extends Activity {
     	}
     	
     	private void notifyComplete() {
-    		if( m_currentActivity != null ) {
-    			m_currentActivity.hideRefreshDialog();
-	    		
-	    		if( m_exception == null ) {
-	    			m_currentActivity.m_report = m_newReport;
-	    			m_currentActivity.displayReport();
-	    		} else {
-	    			m_currentActivity.promptException("Error loading weather report:", m_exception);
-	    		}
-	    		
-	    		m_currentActivity.m_refreshThread = null;
+    		
+			m_currentActivity.hideRefreshDialog();
+    		
+    		if( m_exception == null ) {
+    			m_currentActivity.m_report = m_newReport;
+    			m_currentActivity.displayReport();
+    		} else {
+    			m_currentActivity.promptException("Error loading weather report:", m_exception);
     		}
+    		
+    		m_currentActivity.m_refreshThread = null;
     	}
     }
 }
