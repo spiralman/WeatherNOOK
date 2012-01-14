@@ -390,7 +390,19 @@ public class WeatherNOOKActivity extends Activity {
     	}
     }
     
-    private void hideRefreshDialog() {
+    public String getRefreshMessage() {
+		return m_refreshMessage;
+	}
+
+	public void setRefreshMessage(String refreshMessage) {
+		m_refreshMessage = refreshMessage;
+	}
+	
+	public void showRefreshDialog() {
+		showDialog(REFRESH_DIALOG);
+	}
+
+	private void hideRefreshDialog() {
     	if( m_progressDialog != null ) {
     		Log.d("WeatherNOOK", "Hiding refresh dialog");
     		
@@ -412,17 +424,14 @@ public class WeatherNOOKActivity extends Activity {
     	}
     }
     
-    // TODO: Should refactor the common logic out of these two into a base class (use Generics for Result).
-	private class LocationInitializeThread extends AsyncTask<ObservationStationDB, Void, LocationRetrieval> {
+    private class LocationInitializeThread extends BlockingAsyncTask<ObservationStationDB, Void, LocationRetrieval> {
 		Exception m_exception = null;
-		
-		String m_newRefreshMessage = null;
-		LocationRetrieval m_result = null;
 		
 		WeatherNOOKActivity m_currentActivity = null;
 		
 		public LocationInitializeThread(WeatherNOOKActivity activity) {
-			m_currentActivity = activity;
+			super(activity);
+			setRefreshMessage("Initializing Weather Station Database...");
 		}
 		
 		public LocationRetrieval doInBackground(ObservationStationDB... stationDBs) {
@@ -444,40 +453,10 @@ public class WeatherNOOKActivity extends Activity {
     		
     		return locationRetrieval;
     	}
-		
+    	
 		@Override
-		protected void onPreExecute() {
-			Log.d("WeatherNOOK", "Starting initialize Station DB");
-    		
-	        m_newRefreshMessage = "Initializing Weather Station Database...";
-	        
-	        m_currentActivity.m_refreshMessage = m_newRefreshMessage;
-	        m_currentActivity.showDialog(REFRESH_DIALOG);
-		}
-    	
-    	@Override
-    	protected void onPostExecute(LocationRetrieval retrieval) {
-    		m_result = retrieval;
-    		
-    		if( m_currentActivity != null ) {
-    			notifyComplete();
-    		}
-    	}
-    	
-    	public void setActivity(WeatherNOOKActivity activity) {
-    		m_currentActivity = activity;
-    		
-    		if( m_currentActivity != null ) {
-    			m_currentActivity.m_refreshMessage = m_newRefreshMessage;
-    		}
-    		
-    		if( m_result != null ) {
-    			notifyComplete();
-    		}
-    	}
-    	
-    	private void notifyComplete() {
-    		m_currentActivity.m_locationRetrieval = m_result;
+    	public void notifyComplete(LocationRetrieval result) {
+    		m_currentActivity.m_locationRetrieval = result;
     		
     		if( m_currentActivity.m_onStationDBInitComplete != null ) {
     			m_currentActivity.hideRefreshDialog();
@@ -493,15 +472,12 @@ public class WeatherNOOKActivity extends Activity {
     	}
     }
     
-    private class RefreshThread extends AsyncTask<Void, Void, WeatherReport> {
+    private class RefreshThread extends BlockingAsyncTask<Void, Void, WeatherReport> {
     	Exception m_exception = null;
-    	WeatherNOOKActivity m_currentActivity = null;
-    	String m_newRefreshMessage = null;
-    	
-    	WeatherReport m_newReport = null;
     	
     	public RefreshThread(WeatherNOOKActivity activity) {
-    		m_currentActivity = activity;
+    		super(activity);
+    		setRefreshMessage(String.format("Loading Forecast for %s...", activity.m_location.toString()));
     	}
     	
     	public WeatherReport doInBackground(Void... v) {
@@ -519,44 +495,12 @@ public class WeatherNOOKActivity extends Activity {
     	}
     	
     	@Override
-    	protected void onPreExecute() {
-    		Log.d("WeatherNOOK", "Starting refresh");
-    		
-	        m_newRefreshMessage = String.format("Loading Forecast for %s...", m_location.toString());
-	        
-	        m_currentActivity.m_refreshMessage = m_newRefreshMessage;
-	        m_currentActivity.showDialog(REFRESH_DIALOG);
-    	}
-    	
-    	@Override
-    	protected void onPostExecute(WeatherReport report) {
-    		Log.d("WeatherNOOK", "Refresh complete");
-    		
-    		m_newReport = report;
-    		
-    		if( m_currentActivity != null ) {
-    			notifyComplete();
-    		}
-    	}
-    	
-    	public void setActivity(WeatherNOOKActivity activity) {
-    		m_currentActivity = activity;
-    		
-    		if( m_currentActivity != null ) {
-    			m_currentActivity.m_refreshMessage = m_newRefreshMessage;
-    		}
-    		
-    		if( m_newReport != null ) {
-    			notifyComplete();
-    		}
-    	}
-    	
-    	private void notifyComplete() {
+    	protected void notifyComplete(WeatherReport report) {
     		
 			m_currentActivity.hideRefreshDialog();
     		
     		if( m_exception == null ) {
-    			m_currentActivity.m_report = m_newReport;
+    			m_currentActivity.m_report = report;
     			m_currentActivity.displayReport();
     		} else {
     			m_currentActivity.promptException("Error loading weather report:", m_exception);
