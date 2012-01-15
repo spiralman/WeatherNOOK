@@ -362,7 +362,7 @@ public class WeatherNOOKActivity extends ActionBarActivity {
         	return m_configDialog;
         case ERROR_DIALOG:
         	AlertDialog.Builder builder = new AlertDialog.Builder(WeatherNOOKActivity.this);
-			builder.setMessage("Error: " + m_lastError)
+			builder.setMessage(m_lastError)
 			       .setCancelable(false)
 			       .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 			           public void onClick(DialogInterface dialog, int id) {
@@ -387,7 +387,7 @@ public class WeatherNOOKActivity extends ActionBarActivity {
     		break;
     	case ERROR_DIALOG:
     		AlertDialog errorDialog = (AlertDialog) dialog;
-    		errorDialog.setMessage("Error: " + m_lastError);
+    		errorDialog.setMessage(m_lastError);
     		break;
     	}
     }
