@@ -10,22 +10,22 @@ public class CurrentConditions {
 	private String m_windDir = "";
 	private int m_humidity = -1;
 	private int m_pickupPeriod = 0;
-	
+
 	private Date m_observationTime = null;
 	private Date m_refreshAfter = null;
-	
+
 	public String getConditions() {
 		return m_conditions;
 	}
-	
+
 	public void setConditions(String conditions) {
 		m_conditions = conditions;
 	}
-	
+
 	public double getTemperature() {
 		return m_temperature;
 	}
-	
+
 	public void setTemperature(double temperature) {
 		m_temperature = temperature;
 	}
@@ -37,23 +37,23 @@ public class CurrentConditions {
 	public void setWindSpeed(double windSpeed) {
 		m_windSpeed = windSpeed;
 	}
-	
+
 	public String getWindDirAbbreviation() {
 		String abbreviated = "";
 		String direction = m_windDir.toLowerCase();
-		
-		if( direction.contains("north")) {
+
+		if (direction.contains("north")) {
 			abbreviated = "N";
-		} else if( direction.contains("south")) {
+		} else if (direction.contains("south")) {
 			abbreviated = "S";
 		}
-		
-		if( direction.contains("east")) {
+
+		if (direction.contains("east")) {
 			abbreviated += "E";
-		} else if( direction.contains("west")) {
+		} else if (direction.contains("west")) {
 			abbreviated += "W";
 		}
-		
+
 		return abbreviated;
 	}
 
@@ -79,22 +79,22 @@ public class CurrentConditions {
 
 	public void setObservationTime(Date observationTime) {
 		m_observationTime = observationTime;
-		if( m_pickupPeriod != 0 ) {
+		if (m_pickupPeriod != 0) {
 			updateRefreshAfter();
 		}
 	}
-	
+
 	public int getPickupPeriod() {
 		return m_pickupPeriod;
 	}
 
 	public void setPickupPeriod(int pickupPeriod) {
 		m_pickupPeriod = pickupPeriod;
-		if( m_observationTime != null ) {
+		if (m_observationTime != null) {
 			updateRefreshAfter();
 		}
 	}
-	
+
 	private void updateRefreshAfter() {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(m_observationTime);

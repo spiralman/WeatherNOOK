@@ -22,12 +22,13 @@ import java.io.IOException;
 import java.util.List;
 
 public class MetarSource implements ForecastSource {
-    
-    // TODO: find an online API that performs lat+lon lookup to METAR station code
 
-    public List<Forecast> getForecasts(double lat, double lon, int days) throws ParseException, IOException {
-        throw new ParseException("METAR not yet implemented");
-    }
+	// TODO: find an online API that performs lat+lon lookup to METAR station
+	// code
 
+	public List<Forecast> getForecasts(double lat, double lon, int days)
+			throws ParseException, IOException {
+		throw new ParseException("METAR not yet implemented");
+	}
 
 }

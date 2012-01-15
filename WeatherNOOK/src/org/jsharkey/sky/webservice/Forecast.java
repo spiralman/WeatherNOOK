@@ -20,34 +20,34 @@ package org.jsharkey.sky.webservice;
  * Data for a specific forecast at a point in time.
  */
 public class Forecast {
-    private boolean alert = false;
-    private long validStart = Long.MIN_VALUE;
-    private int tempHigh = Integer.MIN_VALUE;
-    private int tempLow = Integer.MIN_VALUE;
-    
-    private int morningPrecip = Integer.MIN_VALUE;
-    private int eveningPrecip = Integer.MIN_VALUE;
-    
-    private String conditions = "Unknown";
-    private String url;
-    
-    /**
-     * Exception to inform callers that we ran into problems while parsing the
-     * forecast returned by the webservice.
-     */
-    public static final class ParseException extends Exception {
-        private static final long serialVersionUID = 1L;
+	private boolean alert = false;
+	private long validStart = Long.MIN_VALUE;
+	private int tempHigh = Integer.MIN_VALUE;
+	private int tempLow = Integer.MIN_VALUE;
 
-        public ParseException(String detailMessage) {
-            super(detailMessage);
-        }
+	private int morningPrecip = Integer.MIN_VALUE;
+	private int eveningPrecip = Integer.MIN_VALUE;
 
-        public ParseException(String detailMessage, Throwable throwable) {
-            super(detailMessage + ": " + throwable.getMessage(), throwable);
-        }
-    }
+	private String conditions = "Unknown";
+	private String url;
 
-    public long getValidStart() {
+	/**
+	 * Exception to inform callers that we ran into problems while parsing the
+	 * forecast returned by the webservice.
+	 */
+	public static final class ParseException extends Exception {
+		private static final long serialVersionUID = 1L;
+
+		public ParseException(String detailMessage) {
+			super(detailMessage);
+		}
+
+		public ParseException(String detailMessage, Throwable throwable) {
+			super(detailMessage + ": " + throwable.getMessage(), throwable);
+		}
+	}
+
+	public long getValidStart() {
 		return validStart;
 	}
 

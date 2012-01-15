@@ -15,26 +15,32 @@ import android.util.Log;
 
 public class WeatherReport {
 	private Collection<Forecast> m_forecast;
-	
+
 	private CurrentConditions m_currentConditions;
-	
+
 	private String m_url;
-	
-	public static WeatherReport getWeather(ForecastLocation location) throws ParseException, IOException, XmlPullParserException, java.text.ParseException {
+
+	public static WeatherReport getWeather(ForecastLocation location)
+			throws ParseException, IOException, XmlPullParserException,
+			java.text.ParseException {
 		ForecastParser forecastParser = new ForecastParser();
 		StackXmlParser conditionParser = new StackXmlParser();
-		
+
 		WeatherReport report = new WeatherReport();
-		
-		report.m_forecast = forecastParser.getForecasts(location.getLatitude(), location.getLongitude(), 5);
+
+		report.m_forecast = forecastParser.getForecasts(location.getLatitude(),
+				location.getLongitude(), 5);
 		report.m_url = forecastParser.getUrl();
 		report.m_currentConditions = new CurrentConditions();
-		
-		Log.d("ConditionParser", "Conditions from: " + location.getObservationStation().getUrl());
-		
-		Reader conditionXml = WebserviceHelper.queryApi(location.getObservationStation().getUrl());
-		conditionParser.parseXml(conditionXml, new ConditionsInitialState(report.m_currentConditions));
-		
+
+		Log.d("ConditionParser", "Conditions from: "
+				+ location.getObservationStation().getUrl());
+
+		Reader conditionXml = WebserviceHelper.queryApi(location
+				.getObservationStation().getUrl());
+		conditionParser.parseXml(conditionXml, new ConditionsInitialState(
+				report.m_currentConditions));
+
 		return report;
 	}
 

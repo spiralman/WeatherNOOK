@@ -41,80 +41,82 @@ import android.util.Log;
  * results into {@link ForecastProvider}.
  */
 public class WebserviceHelper {
-    private static final String TAG = "ForcastHelper";
-    
-    public static final String COUNTRY_US = "US";
+	private static final String TAG = "ForcastHelper";
 
-    /**
-     * Timeout to wait for webservice to respond. Because we're in the
-     * background, we don't mind waiting for good data.
-     */
-    static final long WEBSERVICE_TIMEOUT = 30 * DateUtils.SECOND_IN_MILLIS;
+	public static final String COUNTRY_US = "US";
 
-    /**
-     * User-agent string to use when making requests. Should be filled using
-     * {@link #prepareUserAgent(Context)} before making any other calls.
-     */
-    private static String sUserAgent = null;
-    
-    private static HttpClient sClient = new DefaultHttpClient();
+	/**
+	 * Timeout to wait for webservice to respond. Because we're in the
+	 * background, we don't mind waiting for good data.
+	 */
+	static final long WEBSERVICE_TIMEOUT = 30 * DateUtils.SECOND_IN_MILLIS;
 
-    /**
-     * Prepare the internal User-Agent string for use. This requires a
-     * {@link Context} to pull the package name and version number for this
-     * application.
-     */
-    public static void prepareUserAgent(Context context) {
-        try {
-            // Read package name and version number from manifest
-            PackageManager manager = context.getPackageManager();
-            PackageInfo info = manager.getPackageInfo(context.getPackageName(), 0);
-            sUserAgent = String.format("%s/%s (Linux; Android)",
-                    info.packageName, info.versionName);
-            
-        } catch(NameNotFoundException e) {
-            Log.e(TAG, "Couldn't find package information in PackageManager", e);
-        }
-    }
-    
-    /**
-     * Open a request to the given URL, returning a {@link Reader} across the
-     * response from that API.
-     */
-    public static Reader queryApi(String url) throws ParseException, IOException {
-        if (sUserAgent == null) {
-            throw new ParseException("Must prepare user agent string");
-        }
-        
-        Reader reader = null;
-        HttpGet request = new HttpGet(url);
-        request.setHeader("User-Agent", sUserAgent);
+	/**
+	 * User-agent string to use when making requests. Should be filled using
+	 * {@link #prepareUserAgent(Context)} before making any other calls.
+	 */
+	private static String sUserAgent = null;
 
-        HttpResponse response = sClient.execute(request);
+	private static HttpClient sClient = new DefaultHttpClient();
 
-        StatusLine status = response.getStatusLine();
-        Log.d(TAG, "Request returned status " + status);
+	/**
+	 * Prepare the internal User-Agent string for use. This requires a
+	 * {@link Context} to pull the package name and version number for this
+	 * application.
+	 */
+	public static void prepareUserAgent(Context context) {
+		try {
+			// Read package name and version number from manifest
+			PackageManager manager = context.getPackageManager();
+			PackageInfo info = manager.getPackageInfo(context.getPackageName(),
+					0);
+			sUserAgent = String.format("%s/%s (Linux; Android)",
+					info.packageName, info.versionName);
 
-        HttpEntity entity = response.getEntity();
-        reader = new InputStreamReader(entity.getContent());
-        
-        return reader;
-    }
-    
-    public static String readApi(String url) throws ParseException, IOException {
-    	String result = "";
-    	Reader reader = queryApi(url);
-    	
-    	BufferedReader lineReader = new BufferedReader(reader);
-    	
-    	String line = lineReader.readLine();
-    	while( line != null ) {
-    		result = result + line;
-    		
-    		line = lineReader.readLine();
-    	}
-    	
-    	return result;
-    }
+		} catch (NameNotFoundException e) {
+			Log.e(TAG, "Couldn't find package information in PackageManager", e);
+		}
+	}
+
+	/**
+	 * Open a request to the given URL, returning a {@link Reader} across the
+	 * response from that API.
+	 */
+	public static Reader queryApi(String url) throws ParseException,
+			IOException {
+		if (sUserAgent == null) {
+			throw new ParseException("Must prepare user agent string");
+		}
+
+		Reader reader = null;
+		HttpGet request = new HttpGet(url);
+		request.setHeader("User-Agent", sUserAgent);
+
+		HttpResponse response = sClient.execute(request);
+
+		StatusLine status = response.getStatusLine();
+		Log.d(TAG, "Request returned status " + status);
+
+		HttpEntity entity = response.getEntity();
+		reader = new InputStreamReader(entity.getContent());
+
+		return reader;
+	}
+
+	public static String readApi(String url) throws ParseException, IOException {
+		String result = "";
+		Reader reader = queryApi(url);
+
+		BufferedReader lineReader = new BufferedReader(reader);
+
+		String line = lineReader.readLine();
+		while (line != null) {
+			result = result + line;
+
+			line = lineReader.readLine();
+		}
+
+		return result;
+	}
 
 }
