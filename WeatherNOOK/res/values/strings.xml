@@ -19,5 +19,6 @@
     <string name="humidityFormat">Humidity: %d%%</string>
     <string name="moreInfo">More Information</string>
     <string name="updatedFormat">Updated %1$tl:%1$tM %1$Tp</string>
+    <string name="currently">Currently</string>
 
 </resources>

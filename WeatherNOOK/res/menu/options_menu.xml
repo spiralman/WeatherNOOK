@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/refresh" android:icon="@drawable/ic_menu_refresh" android:title="@string/refresh"></item>
-    <item android:id="@+id/configure" android:icon="@drawable/ic_dialog_menu_generic" android:title="@string/configure"></item>
+    <item android:id="@+id/refresh" android:icon="@drawable/ic_menu_refresh" android:title="@string/refresh" android:orderInCategory="1" android:showAsAction="always"></item>
+    <item android:id="@+id/configure" android:icon="@drawable/ic_menu_location" android:title="@string/configure" android:orderInCategory="0" android:showAsAction="always"></item>
     
 
 </menu>

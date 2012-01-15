@@ -15,7 +15,8 @@ import org.spiralman.WeatherNOOK.Location.LocationRetrieval;
 import org.spiralman.WeatherNOOK.Location.ForecastLocation;
 import org.spiralman.WeatherNOOK.Location.ObservationStationDB;
 
-import android.app.Activity;
+import com.example.android.actionbarcompat.ActionBarActivity;
+
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -40,7 +41,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 
-public class WeatherNOOKActivity extends Activity {
+public class WeatherNOOKActivity extends ActionBarActivity {
 	private final int REFRESH_DIALOG = 0;
 	private final int CONFIGURE_DIALOG = 1;
 	private final int ERROR_DIALOG = 2;
@@ -95,7 +96,10 @@ public class WeatherNOOKActivity extends Activity {
         
         setContentView(R.layout.main);
         
-        View current = findViewById(R.id.currentConditionLayout);
+        View current = getLayoutInflater().inflate(R.layout.current_conditions, null);
+        ListView list = (ListView) findViewById(R.id.forecastList);
+        list.addHeaderView(current);
+        
         current.setVisibility(View.INVISIBLE);
         
         ObservationStationDB stationDB = new ObservationStationDB(WeatherNOOKActivity.this);
@@ -235,7 +239,6 @@ public class WeatherNOOKActivity extends Activity {
         list.setAdapter(adapter);
         
         ImageView conditionImage = (ImageView) findViewById(R.id.currentImage);
-        TextView location = (TextView) findViewById(R.id.currentLocation);
         TextView conditionLabel = (TextView) findViewById(R.id.currentCondition);
         TextView tempLabel = (TextView) findViewById(R.id.currentTemp);
         TextView windLabel = (TextView) findViewById(R.id.currentWind);
@@ -243,7 +246,7 @@ public class WeatherNOOKActivity extends Activity {
         TextView moreInfoLabel = (TextView) findViewById(R.id.moreInformation);
         TextView updatedLabel = (TextView) findViewById(R.id.updated);
         
-        location.setText(String.format(m_locationFormat, m_location.getShortName()));
+        setTitle(String.format(m_locationFormat, m_location.getShortName()));
         
         conditionImage.setImageResource(ForecastUtils.getIconForForecast(conditions.getConditions(), isDaytime));
         conditionLabel.setText(conditions.getConditions());
@@ -269,7 +272,7 @@ public class WeatherNOOKActivity extends Activity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.options_menu, menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override

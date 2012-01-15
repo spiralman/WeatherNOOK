@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/currentConditionLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp" >
+    
+    <TextView
+	        android:id="@+id/currently"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentLeft="true"
+	        android:layout_alignParentTop="true"
+	        android:text="@string/currently"
+	        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+	    <ImageView
+	        android:id="@+id/currentImage"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentLeft="true"
+	        android:layout_below="@+id/currently"
+	        android:layout_marginLeft="20dp"
+	        android:src="@drawable/ic_launcher" />
+
+	    <TextView
+	        android:id="@+id/currentCondition"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignLeft="@id/currentImage"
+	        android:layout_below="@+id/currentImage"
+	        android:text="Large Text"
+	        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+	    <TextView
+	        android:id="@+id/currentTemp"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentTop="true"
+	        android:layout_centerHorizontal="true"
+	        android:text="@string/currentTempFormat"
+	        android:textAppearance="?android:attr/textAppearanceLarge"
+	        android:textSize="50dp" />
+
+	    <TextView
+	        android:id="@+id/currentWind"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignTop="@+id/currentTemp"
+	        android:layout_marginLeft="20dp"
+	        android:layout_toRightOf="@+id/currentTemp"
+	        android:text="@string/windFormat"
+	        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+	    <TextView
+	        android:id="@+id/currentHumidity"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignLeft="@+id/currentWind"
+	        android:layout_below="@+id/currentWind"
+	        android:text="@string/humidityFormat"
+	        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+	    <TextView
+	        android:id="@+id/moreInformation"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignLeft="@+id/currentHumidity"
+	        android:layout_below="@+id/currentHumidity"
+	        android:text="@string/moreInfo"
+	        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+	    <TextView
+	        android:id="@+id/updated"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignLeft="@+id/moreInformation"
+	        android:layout_below="@+id/moreInformation"
+	        android:text="@string/updatedFormat"
+	        android:textAppearance="?android:attr/textAppearanceSmall" />
+</RelativeLayout>
