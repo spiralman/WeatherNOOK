@@ -18,6 +18,8 @@ import org.spiralman.WeatherNOOK.XmlParser.StackXmlParser;
 import org.spiralman.WeatherNOOK.XmlParser.StackXmlParserState;
 import org.xmlpull.v1.XmlPullParserException;
 
+import android.util.Log;
+
 class TimeRange {
 	public Date start;
 	public Date end;
@@ -387,11 +389,21 @@ public class ForecastParser {
 			throws org.jsharkey.sky.webservice.Forecast.ParseException,
 			IOException, XmlPullParserException, ParseException {
 		StackXmlParser xmlParser = new StackXmlParser();
+		
+		String forecastURL = String.format(WEBSERVICE_URL,
+				latitude, longitude, numDays);
+		
+		Log.d("ForecastParser", "Fetching forecast from: " + forecastURL);
 
-		Reader reader = WebserviceHelper.queryApi(String.format(WEBSERVICE_URL,
-				latitude, longitude, numDays));
+		Reader reader = WebserviceHelper.queryApi(forecastURL);
 
 		xmlParser.parseXml(reader, new ForecastParserInitialState(this));
+		
+		for( Map.Entry<Date, Forecast> forecast : m_forecasts.entrySet() ) {
+			if( !forecast.getValue().isPopulated() ) {
+				m_forecasts.remove(forecast.getKey());
+			}
+		}
 
 		return m_forecasts.values();
 	}

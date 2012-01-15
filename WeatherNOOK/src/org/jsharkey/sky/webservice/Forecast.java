@@ -110,5 +110,9 @@ public class Forecast {
 	public void setAlert(boolean alert) {
 		this.alert = alert;
 	}
+	
+	public boolean isPopulated() {
+		return tempHigh != Integer.MIN_VALUE && tempLow != Integer.MIN_VALUE;
+	}
 
 }

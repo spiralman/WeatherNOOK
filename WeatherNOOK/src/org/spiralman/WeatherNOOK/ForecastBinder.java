@@ -53,10 +53,20 @@ public class ForecastBinder implements ViewBinder {
 		condition.setText(forecast.getConditions());
 		high.setText(String.format(tempHighFormat, forecast.getTempHigh()));
 		low.setText(String.format(tempLowFormat, forecast.getTempLow()));
-		morning.setText(String.format(morningPrecipFormat,
-				forecast.getMorningPrecip()));
-		evening.setText(String.format(eveningPrecipFormat,
-				forecast.getEveningPrecip()));
+		
+		if( forecast.getMorningPrecip() != Integer.MIN_VALUE ) {
+			morning.setText(String.format(morningPrecipFormat,
+					forecast.getMorningPrecip()));
+		} else {
+			morning.setText("Morning: --");
+		}
+		
+		if( forecast.getEveningPrecip() != Integer.MIN_VALUE ) {
+			evening.setText(String.format(eveningPrecipFormat,
+					forecast.getEveningPrecip()));
+		} else {
+			evening.setText("Evening: --");
+		}	
 
 		layout.requestLayout();
 
